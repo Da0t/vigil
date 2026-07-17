@@ -5,7 +5,7 @@
   "description": "Vigil gate service — policy engine + single-use scoped grants (port 4200)",
   "type": "module",
   "scripts": {
-    "test": "tsx src/policy.test.ts && tsx src/grants.test.ts",
+    "test": "tsx --test src/*.test.ts",
     "start": "tsx src/server.ts",
     "dev": "tsx watch src/server.ts"
   },
