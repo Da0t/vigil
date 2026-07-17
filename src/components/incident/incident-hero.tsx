@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useIncidentSim } from "@/lib/use-incident-sim";
+import { useIncidentLive } from "@/lib/use-incident-live";
 import { GlassCard } from "@/components/ui/card";
 import { SimControls } from "./sim-controls";
 import { TelemetryPanel } from "./telemetry-panel";
@@ -13,7 +14,14 @@ import { BlastRadiusPanel } from "./blast-radius-panel";
 import type { Incident } from "@/lib/types";
 
 export function IncidentHero({ incident }: { incident: Incident }) {
-  const { state, toggle, restart } = useIncidentSim();
+  const sim = useIncidentSim();
+  const live = useIncidentLive();
+  const isLive = live.status === "live" && live.state !== null;
+  const state = isLive ? live.state! : sim.state;
+  const onToggle = isLive
+    ? (!state.started || state.finished ? live.start : live.reset)
+    : sim.toggle;
+  const onRestart = isLive ? live.reset : sim.restart;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
@@ -27,7 +35,21 @@ export function IncidentHero({ incident }: { incident: Incident }) {
 
       {/* control bar */}
       <GlassCard className="mt-4 p-4">
-        <SimControls state={state} onToggle={toggle} onRestart={restart} />
+        <div className="flex items-center">
+          <div className="flex-1">
+            <SimControls state={state} onToggle={onToggle} onRestart={onRestart} />
+          </div>
+          <span
+            className={
+              "ml-3 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide " +
+              (isLive
+                ? "bg-emerald-500/15 text-emerald-500"
+                : "bg-secondary text-muted-foreground")
+            }
+          >
+            {isLive ? "LIVE · real services" : "SIM · scripted"}
+          </span>
+        </div>
       </GlassCard>
 
       {/* main grid */}

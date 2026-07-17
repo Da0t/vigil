@@ -1,0 +1,65 @@
+# Vigil — full-stack demo composition.
+#
+# STATUS: authored on person-d-frontend; **VERIFIED POST-MERGE**. Only the web
+# service (build context ".", root Dockerfile) exists on this branch. The
+# backend build contexts — services/payments-api, services/gate,
+# services/vigil-agent — and their Dockerfiles land with Persons A/B/C at merge
+# time; mirror the diagnostic-worker's Dockerfile (services/diagnostic-worker/).
+# `docker compose up` is a merge-time smoke test, NOT a person-d deliverable, so
+# it is not runnable until those contexts exist.
+#
+# Ports are the single source of truth from src/lib/contract.ts (PORTS):
+#   web 3000 · agent 4000 · payments 4100 · gate 4200 · pomerium 4300 · worker 4400
+#
+# NOTE: NEXT_PUBLIC_AGENT_URL is inlined into the client bundle at BUILD time
+# (Next.js NEXT_PUBLIC_ contract), hence it is a build arg, not a runtime env.
+# The browser (not the container) opens the SSE stream, so it targets the
+# host-published http://localhost:4000.
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_AGENT_URL: "http://localhost:4000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - vigil-agent
+
+  payments-api:
+    build: ./services/payments-api
+    ports:
+      - "4100:4100"
+    environment:
+      GATE_URL: "http://gate:4200"
+
+  gate:
+    build: ./services/gate
+    ports:
+      - "4200:4200"
+
+  vigil-agent:
+    build: ./services/vigil-agent
+    ports:
+      - "4000:4000"
+    environment:
+      PAYMENTS_URL: "http://payments-api:4100"
+      GATE_URL: "http://gate:4200"
+      POMERIUM_URL: "http://pomerium:4300"
+      WORKER_URL: "${WORKER_URL:-}"
+      ZERO_MODE: "${ZERO_MODE:-fallback}"
+      ZERO_API_KEY: "${ZERO_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+    depends_on:
+      - payments-api
+      - gate
+
+  pomerium:
+    image: pomerium/pomerium:latest
+    ports:
+      - "4300:4300"
+    volumes:
+      - ./pomerium/config.yaml:/pomerium/config.yaml:ro
+    depends_on:
+      - payments-api
