@@ -169,5 +169,6 @@ export const ENV = {
   workerUrl: "WORKER_URL", // orchestrator → Akash worker
   zeroMode: "ZERO_MODE", // "live" | "fallback"
   zeroApiKey: "ZERO_API_KEY",
-  anthropicKey: "ANTHROPIC_API_KEY", // optional LLM hypothesis step
+  openaiKey: "OPENAI_API_KEY", // optional LLM hypothesis step (services/vigil-agent/src/hypothesis.ts)
+  openaiModel: "OPENAI_MODEL", // defaults to gpt-4o-mini
 } as const;
