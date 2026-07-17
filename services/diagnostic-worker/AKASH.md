@@ -1,6 +1,10 @@
 # Akash deploy — Vigil diagnostic worker
 
-STATUS: awaiting human deploy
+STATUS: image pushed to Docker Hub (da0t/vigil-diagnostic-worker:latest, clean
+single-arch linux/amd64, digest sha256:0d782ad5a668…a1e1c1). buildx cross-build
+verified locally (health + diagnose OK under emulation). deploy.yaml points at
+the pushed image. Remaining: create the Akash lease via console, then set
+WORKER_URL and re-verify (steps 2-4 below).
 
 The service (`services/diagnostic-worker`) is built, verified locally, and
 containerized. The image build + push + Akash lease steps below require a human

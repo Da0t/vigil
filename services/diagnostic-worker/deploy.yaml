@@ -2,7 +2,7 @@
 version: "2.0"
 services:
   worker:
-    image: <dockerhub-user>/vigil-diagnostic-worker:latest
+    image: da0t/vigil-diagnostic-worker:latest
     expose:
       - port: 4400
         as: 80
