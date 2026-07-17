@@ -182,10 +182,7 @@ export function GatePanel({ state }: { state: SimState }) {
               <div className="relative h-1.5 overflow-hidden rounded-full bg-secondary/70">
                 <div
                   className="absolute inset-y-0 left-0 rounded-full bg-[hsl(var(--lg-ok))] transition-[width] duration-200 ease-linear"
-                  style={{
-                    width: `${state.grantWindow * 100}%`,
-                    boxShadow: "0 0 8px hsl(var(--lg-ok)/0.4)",
-                  }}
+                  style={{ width: `${state.grantWindow * 100}%` }}
                 />
               </div>
             </motion.div>

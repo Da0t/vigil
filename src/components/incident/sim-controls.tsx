@@ -51,7 +51,7 @@ export function SimControls({
         </span>
         <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-secondary/70">
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-[hsl(var(--primary))] shadow-[0_0_8px_hsl(var(--primary)/0.7)] transition-[width] duration-200 ease-linear"
+            className="absolute inset-y-0 left-0 rounded-full bg-[hsl(var(--primary))] transition-[width] duration-200 ease-linear"
             style={{ width: `${state.progress * 100}%` }}
           />
         </div>

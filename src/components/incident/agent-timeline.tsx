@@ -15,7 +15,7 @@ function StepIcon({ state }: { state: AgentStep["state"] }) {
     );
   if (state === "active")
     return (
-      <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/15 ring-1 ring-primary/50 shadow-[0_0_14px_-2px_hsl(var(--primary)/0.8)]">
+      <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/15 ring-1 ring-primary/50">
         <Loader2 className="h-3.5 w-3.5 animate-spin text-[hsl(var(--primary))]" />
       </span>
     );

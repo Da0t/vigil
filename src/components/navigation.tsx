@@ -27,7 +27,7 @@ const NAV = [
 function Wordmark() {
   return (
     <Link href="/" className="group flex items-center gap-2.5">
-      <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-primary/15 ring-1 ring-primary/40 shadow-[0_0_18px_-2px_hsl(var(--primary)/0.6)]">
+      <span className="relative grid h-9 w-9 place-items-center rounded-lg bg-primary/15 ring-1 ring-primary/40">
         <ScanEye className="h-5 w-5 text-[hsl(var(--primary))]" />
       </span>
       <span className="flex flex-col leading-none">
@@ -91,7 +91,7 @@ function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
             )}
           >
             {active && (
-              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-[hsl(var(--primary))] shadow-[0_0_10px_hsl(var(--primary)/0.9)]" />
+              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-[hsl(var(--primary))]" />
             )}
             <Icon
               className={cn(

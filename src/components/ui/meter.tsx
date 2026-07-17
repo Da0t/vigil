@@ -43,9 +43,6 @@ export function Meter({
           style={{
             width: `${pct}%`,
             background: tone,
-            boxShadow: over
-              ? "0 0 12px hsl(var(--lg-alert)/0.7)"
-              : "0 0 8px hsl(var(--lg-ok)/0.35)",
           }}
         />
         {typeof threshold === "number" && (

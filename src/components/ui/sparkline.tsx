@@ -59,16 +59,9 @@ export function Sparkline({
     >
       <defs>
         <linearGradient id={`fill-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.22" />
           <stop offset="100%" stopColor={stroke} stopOpacity="0" />
         </linearGradient>
-        <filter id={`glow-${id}`} x="-20%" y="-40%" width="140%" height="180%">
-          <feGaussianBlur stdDeviation="3.2" result="b" />
-          <feMerge>
-            <feMergeNode in="b" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
       </defs>
 
       {/* baseline grid */}
@@ -92,7 +85,6 @@ export function Sparkline({
         strokeWidth={2}
         strokeLinejoin="round"
         strokeLinecap="round"
-        filter={`url(#glow-${id})`}
       />
 
       {showHead && (

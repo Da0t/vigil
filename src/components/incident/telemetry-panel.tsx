@@ -63,11 +63,6 @@ export function TelemetryPanel({
                   "tabular text-4xl font-semibold tracking-tight",
                   resolved ? "text-ok" : "text-[hsl(var(--primary))]"
                 )}
-                style={
-                  resolved
-                    ? undefined
-                    : { textShadow: "0 0 26px hsl(var(--primary) / 0.4)" }
-                }
               >
                 {errorRate.toFixed(errorRate < 1 ? 2 : 1)}
               </span>
