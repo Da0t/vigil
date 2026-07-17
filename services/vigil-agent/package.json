@@ -10,7 +10,6 @@
     "test": "tsx --test src/**/*.test.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.112.2",
     "cors": "^2.8.5",
     "express": "^4.21.2"
   },
