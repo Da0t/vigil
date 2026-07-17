@@ -64,4 +64,12 @@ app.post("/diagnose", requireAuth, (req, res) => {
   res.json(response);
 });
 
-app.listen(PORT, () => { logWorkerConfig(); console.log(`[diagnostic-worker] :${PORT}`); });
+// Global safety nets + graceful shutdown (inline — isolated build context).
+process.on("unhandledRejection", (r) => console.error("[diagnostic-worker] unhandledRejection:", r));
+process.on("uncaughtException", (e) => { console.error("[diagnostic-worker] uncaughtException:", e); process.exit(1); });
+
+const server = app.listen(PORT, () => { logWorkerConfig(); console.log(`[diagnostic-worker] :${PORT}`); });
+
+for (const sig of ["SIGTERM", "SIGINT"] as const) {
+  process.on(sig, () => { console.log(`[diagnostic-worker] ${sig} received`); server.close(() => process.exit(0)); });
+}

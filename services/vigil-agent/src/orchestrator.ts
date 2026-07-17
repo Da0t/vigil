@@ -1,13 +1,18 @@
 import { audit, computeProgress, setStep, stamp, store } from "./state";
 import { clearTraffic, errorRate, startTraffic, stopTraffic } from "./traffic";
-import { PAYMENTS_URL, applyRemediation, diagnose, parseLogs, requestGrant } from "./clients";
+import {
+  PAYMENTS_URL, applyRemediation, diagnose, getJson, getText, parseLogs, postForm, requestGrant,
+} from "./clients";
 import { hypothesize } from "./hypothesis";
+import { env } from "./env";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function until(cond: () => boolean, timeoutMs = 20000, pollMs = 250): Promise<boolean> {
+/** Wait until cond() holds or the timeout elapses; aborts promptly on signal. */
+async function until(cond: () => boolean, timeoutMs = 20000, pollMs = 250, signal?: AbortSignal): Promise<boolean> {
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
+    if (signal?.aborted) return false;
     if (cond()) return true;
     await sleep(pollMs);
   }
@@ -15,27 +20,58 @@ async function until(cond: () => boolean, timeoutMs = 20000, pollMs = 250): Prom
 }
 
 let running = false;
+let currentRun: AbortController | null = null;
+let thrashing = false;
+
+/** Emit a terminal FAILED state — the loop did not reach resolution. */
+function failIncident(reason: string) {
+  store.mutate((s) => {
+    s.incidentStatus = "failed";
+    s.finished = true;
+    s.playing = false;
+    audit(s, "Incident not auto-resolved", "agent", "alert", reason);
+    s.progress = computeProgress(s);
+  });
+}
 
 export async function startIncident() {
   if (running) return;
   running = true;
+  const ac = new AbortController();
+  currentRun = ac;
+  const { signal } = ac;
   try {
     store.begin();
     startTraffic(PAYMENTS_URL);
     await sleep(1500); // clean baseline on the chart
+    if (signal.aborted) return;
 
-    await fetch(`${PAYMENTS_URL}/admin/break`, { method: "POST" });
+    // Induce the incident (dev scaffolding; /admin/break is compiled out in prod).
+    if (!(await postForm(`${PAYMENTS_URL}/admin/break`))) {
+      failIncident("could not induce the incident (admin/break unavailable)");
+      return;
+    }
 
-    // DETECT — real threshold on real measured traffic
-    await until(() => errorRate() > 10);
+    // DETECT — honor the timeout: if error never climbs, do not pretend we detected.
+    if (!(await until(() => errorRate() > 10, 20000, 250, signal))) {
+      if (!signal.aborted) failIncident("no 5xx signal detected within timeout");
+      return;
+    }
     store.mutate((s) => {
       setStep(s, "detect", "active");
       audit(s, "Alert raised · 5xx over threshold", "agent", "signal", `${errorRate().toFixed(1)}% 5xx on payments-api`);
     });
     await sleep(1200);
+    if (signal.aborted) return;
 
-    // CONTEXT — real deploy history from the service
-    const deploys = (await (await fetch(`${PAYMENTS_URL}/deploys`)).json()) as { id: string; note: string; current: boolean }[];
+    // CONTEXT — real deploy history from the service (guarded).
+    let deploys: { id: string; note: string; current: boolean }[];
+    try {
+      deploys = await getJson(`${PAYMENTS_URL}/deploys`);
+    } catch (e) {
+      failIncident(`could not pull deploy history (${(e as Error).message})`);
+      return;
+    }
     const bad = deploys.find((d) => d.current) ?? deploys[deploys.length - 1];
     store.mutate((s) => {
       setStep(s, "detect", "done");
@@ -43,9 +79,16 @@ export async function startIncident() {
       audit(s, `Recent deploy ${bad.id} pulled`, "agent", "neutral", bad.note);
     });
     await sleep(1000);
+    if (signal.aborted) return;
 
-    // CAPABILITY — logs are unreadable, buy a parse from Zero (or fall back)
-    const raw = await (await fetch(`${PAYMENTS_URL}/logs`)).text();
+    // CAPABILITY — logs are unreadable, buy a parse from Zero (or fall back).
+    let raw: string;
+    try {
+      raw = await getText(`${PAYMENTS_URL}/logs`);
+    } catch (e) {
+      failIncident(`could not read logs (${(e as Error).message})`);
+      return;
+    }
     store.mutate((s) => {
       setStep(s, "context", "done");
       setStep(s, "capability", "active");
@@ -56,20 +99,21 @@ export async function startIncident() {
       s.budgetUsed = Number((s.budgetUsed + (parsed.costUsd ?? 0.04)).toFixed(2));
       audit(s, `Capability called · $${(parsed.costUsd ?? 0.04).toFixed(2)} · ${parsed.parserSource}`, "zero", "neutral", `${parsed.errorSignature} in ${parsed.suspectComponent}`);
     });
-    // Optional LLM hypothesis (A5) — no-op unless ANTHROPIC_API_KEY is set.
     const hypo = await hypothesize(parsed, bad.note);
     if (hypo) store.mutate((s) => audit(s, "Hypothesis formed", "agent", "neutral", hypo));
     await sleep(600);
+    if (signal.aborted) return;
 
-    // SANDBOX — disposable diagnostic evidence before any prod ask
+    // SANDBOX — disposable diagnostic evidence before any prod ask.
     store.mutate((s) => {
       setStep(s, "capability", "done");
       setStep(s, "sandbox", "active");
       s.sandbox = { ...s.sandbox, lifecycle: "provisioning" };
-      audit(s, process.env.WORKER_URL ? "Dispatching Akash diagnostic worker" : "Dispatching local diagnostic (fallback)", "akash", "neutral", "ephemeral · no prod credentials aboard");
+      audit(s, env.WORKER_URL ? "Dispatching Akash diagnostic worker" : "Dispatching local diagnostic (fallback)", "akash", "neutral", "ephemeral · no prod credentials aboard");
     });
     store.mutate((s) => { s.sandbox = { ...s.sandbox, lifecycle: "running" }; });
     const diag = await diagnose({ service: "payments-api", deployId: bad.id, candidateAction: "rollback", rawLogs: raw });
+    if (signal.aborted) return;
     store.mutate((s) => {
       s.sandbox = { ...s.sandbox, lifecycle: "done", sandboxPassed: diag.sandboxPassed, recommendedAction: diag.recommendedAction };
       setStep(s, "sandbox", diag.sandboxPassed ? "done" : "failed", `sandbox_passed=${diag.sandboxPassed} · recommended_action=${diag.recommendedAction}`);
@@ -80,8 +124,9 @@ export async function startIncident() {
       s.sandbox = { ...s.sandbox, lifecycle: "torn_down" };
       audit(s, "Diagnostic worker released · no residue", "akash", "neutral");
     });
+    if (signal.aborted) return;
 
-    // GATE — request the one scoped permission
+    // GATE — request the one scoped permission.
     store.mutate((s) => {
       setStep(s, "remediation", "active");
       s.gateState = "pending";
@@ -91,7 +136,6 @@ export async function startIncident() {
       action: "rollback", service: "payments-api", servicesAffected: 1,
       sandboxPassed: diag.sandboxPassed, budgetUsed: store.state.budgetUsed,
       consecutiveFailures: 0, requestedBy: "vigil-agent",
-      // Forward the worker's signed proof so the gate need not trust the boolean.
       deployId: bad.id, attestation: diag.attestation,
     });
 
@@ -120,7 +164,7 @@ export async function startIncident() {
       audit(s, `Gate allowed · scoped, single-use, ${grant.ttlSeconds ?? 60}s TTL`, "pomerium", "ok", grant.scope);
     });
 
-    // APPLY — through Pomerium when POMERIUM_URL is set
+    // APPLY — through Pomerium when POMERIUM_URL is set (guarded in clients).
     const applied = await applyRemediation("rollback", grant.token);
     store.mutate((s) => {
       audit(s, applied.ok ? "Rollback applied through the gate" : `Rollback failed (${applied.status})`, "agent", applied.ok ? "signal" : "alert", applied.ok ? "deploy #4821 reverted" : JSON.stringify(applied.body));
@@ -128,15 +172,21 @@ export async function startIncident() {
     });
     store.mutate((s) => audit(s, "Single-use credential consumed", "pomerium", "ok", "0 standing credentials held"));
 
-    // RECOVERY — real, because the service really got fixed
-    await until(() => errorRate(3000) < 1, 20000);
+    // RECOVERY — honor the timeout: only claim resolved if error really recovered.
+    const recovered = await until(() => errorRate(3000) < 1, 20000, 250, signal);
+    if (signal.aborted) return;
+    if (!recovered) {
+      failIncident("error rate did not recover after rollback");
+      return;
+    }
     store.mutate((s) => {
       s.incidentStatus = "resolved";
       audit(s, "Error rate recovered · incident resolved", "agent", "ok");
     });
 
-    // THE CLAMP — auto demo beat
+    // THE CLAMP — auto demo beat.
     await sleep(2000);
+    if (signal.aborted) return;
     await runThrash();
 
     store.mutate((s) => {
@@ -147,38 +197,48 @@ export async function startIncident() {
     });
   } finally {
     running = false;
+    if (currentRun === ac) currentRun = null;
   }
 }
 
 async function runThrash() {
-  store.mutate((s) => {
-    s.gateState = "pending";
-    s.blastRadius = 12;
-    audit(s, "Agent attempts escalation", "agent", "signal", "mass-restart across 12 services");
-  });
-  const denial = await requestGrant({
-    action: "mass-restart", service: "all-services", servicesAffected: 12,
-    sandboxPassed: false, budgetUsed: store.state.budgetUsed,
-    consecutiveFailures: 2, requestedBy: "vigil-agent",
-  });
-  store.mutate((s) => {
-    s.gateState = denial.verdict === "denied" ? "denied" : "allowed";
-    s.consecutiveFailures = 2;
-    s.denial = {
-      action: "mass-restart across 12 services", verdict: denial.verdict,
-      scope: denial.scope, reason: denial.reason, budgetOk: true,
-      attributedTo: "vigil-agent", at: stamp(s.clock),
-    };
-    audit(s, `Gate ${denial.verdict} · ${denial.reason ?? "escalation"}`, "pomerium", "alert", denial.scope);
-    audit(s, "Policy tightened · escalation refused", "pomerium", "alert");
-  });
+  if (thrashing) return; // guard against double-fire (auto beat + manual button)
+  thrashing = true;
+  try {
+    store.mutate((s) => {
+      s.gateState = "pending";
+      s.blastRadius = 12;
+      audit(s, "Agent attempts escalation", "agent", "signal", "mass-restart across 12 services");
+    });
+    const denial = await requestGrant({
+      action: "mass-restart", service: "all-services", servicesAffected: 12,
+      sandboxPassed: false, budgetUsed: store.state.budgetUsed,
+      consecutiveFailures: 2, requestedBy: "vigil-agent",
+    });
+    store.mutate((s) => {
+      s.gateState = denial.verdict === "denied" ? "denied" : "allowed";
+      s.consecutiveFailures = 2;
+      s.denial = {
+        action: "mass-restart across 12 services", verdict: denial.verdict,
+        scope: denial.scope, reason: denial.reason, budgetOk: true,
+        attributedTo: "vigil-agent", at: stamp(s.clock),
+      };
+      audit(s, `Gate ${denial.verdict} · ${denial.reason ?? "escalation"}`, "pomerium", "alert", denial.scope);
+      audit(s, "Policy tightened · escalation refused", "pomerium", "alert");
+    });
+  } finally {
+    thrashing = false;
+  }
 }
 
 export async function thrash() { await runThrash(); }
 
 export async function resetDemo() {
+  // Abort any running loop BEFORE mutating shared state, so reset can't interleave.
+  currentRun?.abort();
+  await sleep(60); // let the loop observe the abort and unwind
   stopTraffic();
   clearTraffic();
-  await fetch(`${PAYMENTS_URL}/admin/reset`, { method: "POST" }).catch(() => {});
+  await postForm(`${PAYMENTS_URL}/admin/reset`);
   store.reset();
 }

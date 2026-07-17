@@ -1,16 +1,25 @@
 const results: { t: number; ok: boolean }[] = [];
 let timer: ReturnType<typeof setInterval> | null = null;
+let inFlight = false;
 
 export function startTraffic(paymentsUrl: string, intervalMs = 100) {
   stopTraffic();
   timer = setInterval(async () => {
+    // Skip this tick if the prior request is still pending — no overlapping,
+    // unbounded pile-up of un-awaited fetches when payments-api is slow/down.
+    if (inFlight) return;
+    inFlight = true;
     try {
-      const r = await fetch(`${paymentsUrl}/pay`);
+      // A hung payments-api must read as a FAILED request (outage), not a
+      // stale-zero gap, so time each request out and count timeouts as failures.
+      const r = await fetch(`${paymentsUrl}/pay`, { signal: AbortSignal.timeout(2000) });
       results.push({ t: Date.now(), ok: r.ok });
     } catch {
       results.push({ t: Date.now(), ok: false });
+    } finally {
+      inFlight = false;
+      if (results.length > 1500) results.splice(0, results.length - 1500);
     }
-    if (results.length > 1500) results.splice(0, results.length - 1500);
   }, intervalMs);
 }
 

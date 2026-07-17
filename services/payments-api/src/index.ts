@@ -3,6 +3,10 @@ import cors from "cors";
 import type { VerifyResponse } from "../../../src/lib/contract";
 import { AUTH_ENABLED, env, isDev, isProd, logPaymentsConfig } from "./env";
 import { captureRawBody, requireInternalAuth, signRequest } from "../../shared/auth";
+import { asyncHandler, errorHandler, installSafetyNets, installSignalHandlers, onShutdown } from "../../shared/http";
+
+const SERVICE = "payments-api";
+installSafetyNets(SERVICE);
 
 const PORT = env.PORT;
 const GATE_URL = env.GATE_URL;
@@ -114,7 +118,7 @@ if (isDev) {
   app.post("/admin/reset", (_req, res) => { seed(); res.json({ ok: true }); });
 }
 
-app.post("/rollback", requireAuth, async (req, res) => {
+app.post("/rollback", requireAuth, asyncHandler(async (req, res) => {
   const g = await grantValid(req.header("x-vigil-grant"), "rollback");
   if (!g.ok) { res.status(403).json({ error: "grant rejected", reason: g.reason }); return; }
   broken = false;
@@ -123,13 +127,17 @@ app.post("/rollback", requireAuth, async (req, res) => {
   if (bad) bad.status = "rolled_back";
   log("I", "deployer", "ROLLBACK_OK", { to: "#4820" });
   res.json({ ok: true, deploy: current });
-});
+}));
 
-app.post("/restart", requireAuth, async (req, res) => {
+app.post("/restart", requireAuth, asyncHandler(async (req, res) => {
   const g = await grantValid(req.header("x-vigil-grant"), "restart");
   if (!g.ok) { res.status(403).json({ error: "grant rejected", reason: g.reason }); return; }
   log("I", "supervisor", "RESTART_OK", { deploy: current });
   res.json({ ok: true, restarted: true, note: "restart does not fix a bad deploy" });
-});
+}));
 
-app.listen(PORT, () => { logPaymentsConfig(); console.log(`[payments-api] :${PORT}`); });
+app.use(errorHandler(SERVICE));
+
+const server = app.listen(PORT, () => { logPaymentsConfig(); console.log(`[payments-api] :${PORT}`); });
+onShutdown(() => new Promise<void>((r) => server.close(() => r())));
+installSignalHandlers(SERVICE);

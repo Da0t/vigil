@@ -11,12 +11,14 @@ const STATUS_TONE: Record<IncidentStatus, "alert" | "signal" | "ok"> = {
   active: "alert",
   resolving: "signal",
   resolved: "ok",
+  failed: "alert",
 };
 
 const STATUS_LABEL: Record<IncidentStatus, string> = {
   active: "Active",
   resolving: "Resolving",
   resolved: "Resolved",
+  failed: "Not resolved",
 };
 
 export function TelemetryPanel({
