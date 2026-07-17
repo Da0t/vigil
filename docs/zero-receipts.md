@@ -1,14 +1,47 @@
 # Zero.xyz log-parse capability — receipts
 
-STATUS: awaiting Zero API key
+STATUS: ✅ LIVE. Signed in via `zero auth login` (datq.nguyen06@gmail.com, $5
+starter credit). `.env` has `ZERO_MODE=live`.
 
-Vigil lacks the ability to parse payments-api's cryptic `.vlog` format on its
-own, so it *buys* that capability from Zero on demand. The integration
-(`services/vigil-agent/src/integrations/zero-live.ts`, `parseLogsLive(raw)`) is
-implemented, type-checks against the frozen contract, and its failure path is
-verified. The one thing missing is a funded Zero credential — get it at the
-sponsor booth, then run the one-command verification below and paste the real
-receipt here.
+Vigil lacks the ability to turn payments-api's cryptic `.vlog` lines into
+structured fields on its own, so it *buys* that capability from Zero on demand,
+paying per call in USDC over x402. The integration
+(`services/vigil-agent/src/integrations/zero-live.ts`, `parseLogsLive(raw)`)
+shells out to the real Zero CLI (`zero fetch`), which handles the x402 payment
+and wallet signing.
+
+## Live receipts (verified 2026-07-17)
+
+- **Capability chosen:** `402.com.tr AI Field Extractor`
+  (`402-com-tr-ai-field-extractor-a6518290`,
+  `https://402.com.tr/api/x402/ai-extract`) — an LLM-backed extractor
+  (Claude Haiku 4.5) that pulls named fields out of arbitrary text. Chosen via
+  `zero search "extract fields from raw text log line"`.
+  - *Why not the "Strale Log Parser" (our first pick):* live testing showed it
+    returned `detected_format: unknown, error_count: 0` for Vigil's bespoke
+    `.vlog` format (its listing even read "Last successful run: never"). The AI
+    Field Extractor parses the custom format correctly, so Zero's output is
+    genuinely *used*, not paid-for-then-discarded.
+- **Real call, real result** (`parseLogsLive` on `shared/fixtures/payments.vlog`):
+  ```
+  [zero] extracted: {"errorSignature":"ERR_TIMEOUT_CFG","suspectComponent":"stripe_adapter","suspectDeploy":"#4821","errorCount":"6"}
+  → ParsedLogs { parserSource: "zero", costUsd: 0.03, ... }
+  ```
+- **Payment:** x402 / USDC on Base, ~$0.03/call. `zero wallet balance` went
+  5 → 4.777997 USDC across verification. A sample payment receipt:
+  `{protocol:"x402", chain:"base", txHash:"0x04a1dd8e…3a94a38", amount:"0.03", asset:"USDC"}`.
+- **Full loop:** with `ZERO_MODE=live`, the incident loop's capability step is a
+  genuine paid Zero call — audit shows
+  `Capability called · $0.03 · zero — ERR_TIMEOUT_CFG in stripe_adapter`, and the
+  cost flows into the on-screen budget meter (`budgetUsed=$0.03`).
+
+## Field provenance
+
+`errorSignature`, `suspectComponent`, `suspectDeploy` come from Zero's
+extractor. `sampleLines` are the raw `E`-level lines (display only). `costUsd`
+comes from Zero's payment receipt. If the capability ever returns no usable
+fields, `parseLogsLive` throws and `clients.ts` falls back to the local regex
+parser (`parserSource:"fallback"`) — the demo never breaks.
 
 ---
 
