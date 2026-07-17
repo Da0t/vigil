@@ -8,3 +8,4 @@ npm-debug.log*
 .env*
 next-env.d.ts
 /coverage
+*.tsbuildinfo
