@@ -1,0 +1,12 @@
+|I|1752770290|router|OK_CHARGE|txn=pay_2Ka9|lat_ms=48
+|I|1752770295|router|OK_CHARGE|txn=pay_9Bc1|lat_ms=52
+|I|1752770301|deployer|DEPLOY_APPLIED|deploy=#4821|files=stripe_adapter.ts
+|W|1752770305|stripe_adapter|WARN_SLOW_UPSTREAM|txn=pay_4Fd8|lat_ms=1890|deploy=#4821
+|E|1752770308|stripe_adapter|ERR_TIMEOUT_CFG|txn=pay_8Hf2|lat_ms=5001|deploy=#4821
+|E|1752770309|stripe_adapter|ERR_TIMEOUT_CFG|txn=pay_1Qz3|lat_ms=5002|deploy=#4821
+|I|1752770310|router|OK_CHARGE|txn=pay_7Xw2|lat_ms=44
+|E|1752770311|stripe_adapter|ERR_TIMEOUT_CFG|txn=pay_5Mn6|lat_ms=5000|deploy=#4821
+|E|1752770313|stripe_adapter|ERR_TIMEOUT_CFG|txn=pay_3Jk4|lat_ms=5003|deploy=#4821
+|W|1752770314|router|WARN_RETRY_STORM|count=14
+|E|1752770316|stripe_adapter|ERR_TIMEOUT_CFG|txn=pay_6Tp0|lat_ms=5001|deploy=#4821
+|E|1752770318|stripe_adapter|ERR_TIMEOUT_CFG|txn=pay_0Vb7|lat_ms=5002|deploy=#4821

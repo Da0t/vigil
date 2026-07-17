@@ -1,41 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  AgentStep,
-  AuditEntry,
-  GateDecision,
-  IncidentStatus,
-  SandboxResult,
-} from "@/lib/types";
+import type { AgentStep, AuditEntry } from "@/lib/types";
+import type { GateState, LoopState } from "@/lib/contract";
 
-export type GateState = "idle" | "pending" | "allowed" | "denied";
+export type { GateState };
 
-export interface SimState {
-  clock: number;
-  playing: boolean;
-  started: boolean;
-  finished: boolean;
-  progress: number;
-  incidentStatus: IncidentStatus;
-  errorRate: number;
-  series: number[];
-  steps: AgentStep[];
-  sandbox: SandboxResult;
-  gateState: GateState;
-  gate: GateDecision | null;
-  denial: GateDecision | null;
-  grantWindow: number; // 1 = fresh grant, 0 = consumed
-  grantConsumed: boolean;
-  budgetUsed: number;
-  budgetMax: number;
-  blastRadius: number;
-  blastMax: number;
-  blastThreshold: number;
-  consecutiveFailures: number;
-  standingCredentials: number;
-  audit: AuditEntry[];
-}
+/** The sim and the live orchestrator share one state shape — see contract.ts. */
+export type SimState = LoopState;
 
 const TICK = 0.2;
 const END = 15.6;
