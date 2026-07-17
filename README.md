@@ -58,7 +58,7 @@ service.
 | **Zero.xyz** | Per-call log-parse capability the agent buys just-in-time (beat 4). It never holds a standing parser — it pays per use. | `docs/zero-receipts.md` |
 | **Akash** | Hosts the diagnostic worker that reproduces the failure in a disposable sandbox (beat 5), deployed live. | deployed URL + proof in `services/diagnostic-worker/AKASH.md` |
 | **Pomerium** | The *only* path to destructive routes (`/rollback`, `/restart`). Rollback (beat 6–7) and the denied mass-restart (beat 8) really transit it. | `pomerium/` (config + policy) |
-| **AWS / Anthropic** | Optional LLM hypothesis step — Claude (`claude-sonnet-5`) writes the root-cause hypothesis when `ANTHROPIC_API_KEY` is set; deterministic fallback otherwise. | env `ANTHROPIC_API_KEY` |
+| **OpenAI** | Optional LLM hypothesis step — writes the one-sentence root-cause hypothesis (`gpt-4o-mini`) when `OPENAI_API_KEY` is set; the loop runs identically without it. | env `OPENAI_API_KEY` |
 
 ## What's real vs simulated
 
