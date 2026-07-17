@@ -117,7 +117,7 @@ export function Navigation() {
   return (
     <>
       {/* Desktop rail */}
-      <aside className="sticky top-0 z-30 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r border-border bg-background px-4 py-6 lg:flex">
+      <aside className="sticky top-0 z-30 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r border-border/60 bg-background/50 px-4 py-6 backdrop-blur-2xl lg:flex">
         <Wordmark />
         <AgentPill />
         <nav className="flex flex-1 flex-col gap-1">
@@ -132,14 +132,14 @@ export function Navigation() {
       </aside>
 
       {/* Mobile top bar */}
-      <div className="sticky top-0 z-30 flex w-full items-center justify-between border-b border-border bg-background px-4 py-3 lg:hidden">
+      <div className="sticky top-0 z-30 flex w-full items-center justify-between border-b border-border/60 bg-background/60 px-4 py-3 backdrop-blur-2xl lg:hidden">
         <Wordmark />
         <div className="flex items-center gap-2">
           <AgentPill />
           <ThemeToggle />
         </div>
       </div>
-      <nav className="sticky top-[65px] z-20 flex w-full items-center gap-1 overflow-x-auto border-b border-border bg-background px-3 py-2 lg:hidden">
+      <nav className="sticky top-[65px] z-20 flex w-full items-center gap-1 overflow-x-auto border-b border-border/50 bg-background/50 px-3 py-2 backdrop-blur-2xl lg:hidden">
         <NavItems pathname={pathname} />
       </nav>
     </>

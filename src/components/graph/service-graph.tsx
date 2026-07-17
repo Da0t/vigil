@@ -26,12 +26,12 @@ const KIND_ICON: Record<NodeKind, typeof Server> = {
 };
 
 const NODE_CLASS: Record<NodeState, string> = {
-  healthy: "border-border bg-card",
-  dependency: "border-foreground/25 bg-card",
-  affected: "border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--primary)/0.12)]",
-  scoped: "border-[hsl(var(--lg-ok)/0.5)] bg-[hsl(var(--lg-ok)/0.07)]",
-  blast: "border-[hsl(var(--lg-alert)/0.65)] bg-[hsl(var(--lg-alert)/0.12)]",
-  resolved: "border-[hsl(var(--lg-ok)/0.4)] bg-card",
+  healthy: "border-border bg-card/60",
+  dependency: "border-foreground/25 bg-card/60",
+  affected: "border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--primary)/0.16)]",
+  scoped: "border-[hsl(var(--lg-ok)/0.5)] bg-[hsl(var(--lg-ok)/0.1)]",
+  blast: "border-[hsl(var(--lg-alert)/0.65)] bg-[hsl(var(--lg-alert)/0.16)]",
+  resolved: "border-[hsl(var(--lg-ok)/0.4)] bg-card/60",
 };
 
 const ICON_CLASS: Record<NodeState, string> = {
@@ -99,7 +99,7 @@ export function ServiceGraph({ mode }: { mode: GraphMode }) {
             >
               <div
                 className={cn(
-                  "flex items-center gap-2 rounded-md border px-2.5 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-colors duration-500",
+                  "flex items-center gap-2 rounded-lg border px-2.5 py-1.5 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.6)] backdrop-blur-lg transition-colors duration-500",
                   NODE_CLASS[st]
                 )}
               >
