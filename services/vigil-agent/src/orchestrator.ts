@@ -1,10 +1,14 @@
 import { audit, computeProgress, setStep, stamp, store } from "./state";
 import { clearTraffic, errorRate, startTraffic, stopTraffic } from "./traffic";
 import {
-  PAYMENTS_URL, applyRemediation, diagnose, getJson, getText, parseLogs, postForm, requestGrant,
+  PAYMENTS_URL, applyRemediation, diagnose, getJson, getText, newCorrelationId, parseLogs, postForm, requestGrant,
 } from "./clients";
 import { hypothesize } from "./hypothesis";
 import { env } from "./env";
+import { createLogger } from "../../shared/observability";
+import { incidentOutcome, incidentsTotal } from "./metrics";
+
+const log = createLogger("vigil-agent");
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -25,6 +29,8 @@ let thrashing = false;
 
 /** Emit a terminal FAILED state — the loop did not reach resolution. */
 function failIncident(reason: string) {
+  incidentOutcome.inc({ outcome: "failed" });
+  log.warn({ reason }, "incident failed");
   store.mutate((s) => {
     s.incidentStatus = "failed";
     s.finished = true;
@@ -40,6 +46,9 @@ export async function startIncident() {
   const ac = new AbortController();
   currentRun = ac;
   const { signal } = ac;
+  const correlationId = newCorrelationId();
+  incidentsTotal.inc();
+  log.info({ correlationId }, "incident started");
   try {
     store.begin();
     startTraffic(PAYMENTS_URL);
@@ -140,6 +149,7 @@ export async function startIncident() {
     });
 
     if (grant.verdict === "denied" || !grant.token) {
+      incidentOutcome.inc({ outcome: "denied" });
       store.mutate((s) => {
         s.gateState = "denied";
         s.denial = { action: "rollback payments-api", verdict: "denied", scope: grant.scope, reason: grant.reason, budgetOk: true, attributedTo: "vigil-agent", at: stamp(s.clock) };
@@ -179,6 +189,7 @@ export async function startIncident() {
       failIncident("error rate did not recover after rollback");
       return;
     }
+    incidentOutcome.inc({ outcome: "resolved" });
     store.mutate((s) => {
       s.incidentStatus = "resolved";
       audit(s, "Error rate recovered · incident resolved", "agent", "ok");

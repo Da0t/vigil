@@ -8,8 +8,14 @@ import { AUTH_ENABLED, ATTEST_ENABLED, env, isDev, logGateConfig } from "./env";
 import { captureRawBody, requireInternalAuth, verifyAttestation } from "../../shared/auth";
 import { asyncHandler, errorHandler, installSafetyNets, installSignalHandlers, onShutdown, validateBody } from "../../shared/http";
 import { grantRequestSchema, verifyRequestSchema } from "./validation";
+import { correlationMiddleware, createLogger, initErrorReporting, initMetrics, initTracing, metricsHandler } from "../../shared/observability";
+import { decisionLatency, grantsConsumed, grantsDenied, grantsIssued } from "./metrics";
 
 const SERVICE = "gate";
+const log = createLogger(SERVICE);
+initMetrics();
+void initErrorReporting(SERVICE);
+void initTracing(SERVICE);
 installSafetyNets(SERVICE);
 
 const PORT = env.PORT;
@@ -26,10 +32,13 @@ const requireAuth = requireInternalAuth({ secret: env.VIGIL_INTERNAL_SECRET, ena
 const app = express();
 app.use(cors());
 app.use(express.json({ verify: captureRawBody }));
+app.use(correlationMiddleware(log));
 
 app.get("/health", asyncHandler(async (_req, res) => {
   res.status(200).json({ ok: true, standingGrants: await store.standing() });
 }));
+
+app.get("/metrics", metricsHandler());
 
 /**
  * The gate must not trust self-reported evidence. `sandboxPassed` only counts
@@ -51,17 +60,21 @@ app.post("/grants", requireAuth, validateBody(grantRequestSchema), asyncHandler(
   const key = `${requestedBy}:${gr.action}`;
 
   // Replace trusted booleans with verified evidence before policy runs.
+  const endTimer = decisionLatency.startTimer();
   const effective: GrantRequest = { ...gr, requestedBy, sandboxPassed: sandboxProven(gr) };
   const result = evaluatePolicy(effective, { ...DEFAULT_CONTEXT, observedFailures: throttle.observed(key) });
+  endTimer();
 
   let response: GrantResponse;
   if (result.verdict === "allowed") {
     throttle.reset(key); // success clears the denial counter for this key
     const g = await store.mint(gr.action, gr.service, TTL_SECONDS);
     response = { ...result, token: g.token, ttlSeconds: TTL_SECONDS, singleUse: true };
+    grantsIssued.inc({ action: gr.action });
   } else {
     throttle.recordDenial(key);
     response = result;
+    grantsDenied.inc({ action: gr.action, reason: response.reason ?? "unknown" });
   }
 
   decisions.push({
@@ -76,8 +89,10 @@ app.post("/grants", requireAuth, validateBody(grantRequestSchema), asyncHandler(
     reason: response.reason,
   });
   if (decisions.length > 500) decisions.shift();
-  console.log(
-    `[gate] ${response.verdict.toUpperCase()} ${gr.action} ${gr.service} by ${requestedBy} (${response.reason ?? response.scope})`,
+  const reqLog = (req as { log?: typeof log }).log ?? log;
+  reqLog.info(
+    { verdict: response.verdict, action: gr.action, service: gr.service, requestedBy, reason: response.reason ?? response.scope },
+    "grant decision",
   );
   res.json(response);
 }));
@@ -85,7 +100,9 @@ app.post("/grants", requireAuth, validateBody(grantRequestSchema), asyncHandler(
 app.post("/grants/verify", requireAuth, validateBody(verifyRequestSchema), asyncHandler(async (req, res) => {
   const { token, action, service } = req.body as VerifyRequest;
   const v = await store.verifyAndConsume(token, action, service);
-  console.log(`[gate] verify ${action} ${service}: ${v.valid ? "OK (consumed)" : `REJECTED (${v.reason})`}`);
+  grantsConsumed.inc({ result: v.valid ? "ok" : "rejected" });
+  const reqLog = (req as { log?: typeof log }).log ?? log;
+  reqLog.info({ action, service, valid: v.valid, reason: v.reason }, "grant verify");
   res.json(v);
 }));
 
@@ -105,7 +122,7 @@ const sweeper = setInterval(() => {
 
 const server = app.listen(PORT, () => {
   logGateConfig();
-  console.log(`[gate] :${PORT} (auth ${AUTH_ENABLED ? "ENFORCED" : "disabled — dev"}, attestation ${ATTEST_ENABLED ? "ENFORCED" : "disabled — dev"})`);
+  log.info({ port: PORT, authEnforced: AUTH_ENABLED, attestationEnforced: ATTEST_ENABLED }, "gate listening");
 });
 
 onShutdown(() => { clearInterval(sweeper); });

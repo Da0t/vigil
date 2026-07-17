@@ -76,7 +76,18 @@ app.post("/diagnose", requireAuth, (req, res) => {
     checks,
     attestation,
   };
-  console.log(`[worker] diagnose ${service}/${deployId}: sandbox_passed=${passed}${attestation ? " (attested)" : ""}`);
+  // Emit a structured line carrying the correlation ID so one incident is
+  // traceable across the agent → worker hop (worker is an isolated build context
+  // and cannot import the shared pino logger).
+  const cid = req.headers["x-vigil-correlation-id"];
+  console.log(JSON.stringify({
+    service: "diagnostic-worker",
+    correlationId: Array.isArray(cid) ? cid[0] : cid,
+    msg: "diagnose",
+    subject: `${service}/${deployId}`,
+    sandboxPassed: passed,
+    attested: !!attestation,
+  }));
   res.json(response);
 });
 

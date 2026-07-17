@@ -4,8 +4,13 @@ import type { VerifyResponse } from "../../../src/lib/contract";
 import { AUTH_ENABLED, env, isDev, isProd, logPaymentsConfig } from "./env";
 import { captureRawBody, requireInternalAuth, signRequest } from "../../shared/auth";
 import { asyncHandler, errorHandler, installSafetyNets, installSignalHandlers, onShutdown } from "../../shared/http";
+import { CORRELATION_HEADER, correlationMiddleware, createLogger, initErrorReporting, initMetrics, initTracing, metricsHandler } from "../../shared/observability";
 
 const SERVICE = "payments-api";
+const logger = createLogger(SERVICE);
+initMetrics();
+void initErrorReporting(SERVICE);
+void initTracing(SERVICE);
 installSafetyNets(SERVICE);
 
 const PORT = env.PORT;
@@ -39,12 +44,12 @@ function log(lvl: "E" | "W" | "I", component: string, code: string, kv: Record<s
   if (vlog.length > 500) vlog.shift();
 }
 
-async function grantValid(token: string | undefined, action: string): Promise<{ ok: boolean; reason?: string }> {
+async function grantValid(token: string | undefined, action: string, correlationId?: string): Promise<{ ok: boolean; reason?: string }> {
   if (!GATE_URL) {
     // Fail CLOSED in prod: with no gate we cannot prove a grant, so refuse.
     // Fail CONVENIENT in dev: the ungated local path keeps the demo runnable.
     if (isProd) return { ok: false, reason: "no gate configured (fail closed)" };
-    console.warn(`[payments-api] GATE_URL unset — ${action} allowed ungated (dev only)`);
+    logger.warn({ action }, "GATE_URL unset — allowed ungated (dev only)");
     return { ok: true };
   }
   if (!token) return { ok: false, reason: "no grant presented" };
@@ -52,6 +57,7 @@ async function grantValid(token: string | undefined, action: string): Promise<{ 
   const path = "/grants/verify";
   const body = JSON.stringify({ token, action, service: "payments-api" });
   const headers: Record<string, string> = { "content-type": "application/json" };
+  if (correlationId) headers[CORRELATION_HEADER] = correlationId;
   if (env.VIGIL_INTERNAL_SECRET) {
     Object.assign(headers, signRequest(env.VIGIL_INTERNAL_SECRET, "payments-api", "POST", path, body));
   }
@@ -74,8 +80,10 @@ async function grantValid(token: string | undefined, action: string): Promise<{ 
 const app = express();
 app.use(cors());
 app.use(express.json({ verify: captureRawBody }));
+app.use(correlationMiddleware(logger));
 
 app.get("/health", (_req, res) => { res.json({ ok: !broken, deploy: current }); });
+app.get("/metrics", metricsHandler());
 
 app.get("/pay", (_req, res) => {
   const ok = !broken;
@@ -119,7 +127,9 @@ if (isDev) {
 }
 
 app.post("/rollback", requireAuth, asyncHandler(async (req, res) => {
-  const g = await grantValid(req.header("x-vigil-grant"), "rollback");
+  const g = await grantValid(req.header("x-vigil-grant"), "rollback", (req as { correlationId?: string }).correlationId);
+  const reqLog = (req as { log?: typeof logger }).log ?? logger;
+  reqLog.info({ action: "rollback", granted: g.ok, reason: g.reason }, "destructive call");
   if (!g.ok) { res.status(403).json({ error: "grant rejected", reason: g.reason }); return; }
   broken = false;
   current = "#4820";
@@ -130,7 +140,7 @@ app.post("/rollback", requireAuth, asyncHandler(async (req, res) => {
 }));
 
 app.post("/restart", requireAuth, asyncHandler(async (req, res) => {
-  const g = await grantValid(req.header("x-vigil-grant"), "restart");
+  const g = await grantValid(req.header("x-vigil-grant"), "restart", (req as { correlationId?: string }).correlationId);
   if (!g.ok) { res.status(403).json({ error: "grant rejected", reason: g.reason }); return; }
   log("I", "supervisor", "RESTART_OK", { deploy: current });
   res.json({ ok: true, restarted: true, note: "restart does not fix a bad deploy" });

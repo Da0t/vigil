@@ -5,22 +5,38 @@ import { parseLogsFallback } from "./parse-fallback";
 import { parseLogsLive } from "./integrations/zero-live";
 import { env } from "./env";
 import { signRequest } from "../../shared/auth";
+import { CORRELATION_HEADER } from "../../shared/observability";
+import { randomUUID } from "node:crypto";
 
 export const PAYMENTS_URL = env.PAYMENTS_URL;
 const GATE_URL = env.GATE_URL;
 const WORKER_URL = env.WORKER_URL;
 
-/** Sign an outbound internal call as "vigil-agent" (no-op in dev without a secret). */
-function authHeaders(method: string, url: string, rawBody: string): Record<string, string> {
-  if (!env.VIGIL_INTERNAL_SECRET) return {};
-  return signRequest(env.VIGIL_INTERNAL_SECRET, "vigil-agent", method, new URL(url).pathname, rawBody);
+/** Correlation ID for the current incident, propagated to every service it calls. */
+let correlationId = "";
+export function newCorrelationId(): string {
+  correlationId = randomUUID();
+  return correlationId;
+}
+export function currentCorrelationId(): string {
+  return correlationId;
+}
+
+/** Correlation + (when a secret is set) signed-auth headers for an outbound call. */
+function outboundHeaders(method: string, url: string, rawBody: string): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (correlationId) h[CORRELATION_HEADER] = correlationId;
+  if (env.VIGIL_INTERNAL_SECRET) {
+    Object.assign(h, signRequest(env.VIGIL_INTERNAL_SECRET, "vigil-agent", method, new URL(url).pathname, rawBody));
+  }
+  return h;
 }
 
 async function postJson<T>(url: string, body: unknown, timeoutMs = 15000): Promise<T> {
   const raw = JSON.stringify(body);
   const r = await fetch(url, {
     method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders("POST", url, raw) },
+    headers: { "content-type": "application/json", ...outboundHeaders("POST", url, raw) },
     body: raw,
     signal: AbortSignal.timeout(timeoutMs),
   });
@@ -30,19 +46,19 @@ async function postJson<T>(url: string, body: unknown, timeoutMs = 15000): Promi
 
 /** Guarded GET for read-only telemetry (open endpoints). Throws on !ok/timeout. */
 export async function getText(url: string, timeoutMs = 5000): Promise<string> {
-  const r = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+  const r = await fetch(url, { headers: outboundHeaders("GET", url, ""), signal: AbortSignal.timeout(timeoutMs) });
   if (!r.ok) throw new Error(`GET ${new URL(url).pathname} → ${r.status}`);
   return r.text();
 }
 export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
-  const r = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+  const r = await fetch(url, { headers: outboundHeaders("GET", url, ""), signal: AbortSignal.timeout(timeoutMs) });
   if (!r.ok) throw new Error(`GET ${new URL(url).pathname} → ${r.status}`);
   return (await r.json()) as T;
 }
 /** Dev-only incident scaffolding (payments /admin/* is compiled out in prod). */
 export async function postForm(url: string, timeoutMs = 5000): Promise<boolean> {
   try {
-    const r = await fetch(url, { method: "POST", signal: AbortSignal.timeout(timeoutMs) });
+    const r = await fetch(url, { method: "POST", headers: outboundHeaders("POST", url, ""), signal: AbortSignal.timeout(timeoutMs) });
     return r.ok;
   } catch {
     return false;
@@ -107,7 +123,7 @@ export async function applyRemediation(action: "rollback" | "restart", token: st
   // Destructive calls route through Pomerium in prod; the direct fallback is dev-only.
   const base = env.POMERIUM_URL ?? PAYMENTS_URL;
   const url = `${base}/${action}`;
-  const headers: Record<string, string> = { "x-vigil-grant": token, ...authHeaders("POST", url, "") };
+  const headers: Record<string, string> = { "x-vigil-grant": token, ...outboundHeaders("POST", url, "") };
   try {
     const r = await fetch(url, { method: "POST", headers, signal: AbortSignal.timeout(10000) });
     return { ok: r.ok, status: r.status, body: await r.json().catch(() => ({})) };
