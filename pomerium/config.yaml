@@ -1,0 +1,25 @@
+# Pomerium Core — all-in-one, local demo mode (verified against Pomerium 0.33.0).
+#
+# Vigil's destructive path:  agent → :4300 (Pomerium) → payments-api :4100
+#
+# ONLY the two destructive endpoints (/rollback, /restart) are declared as
+# routes. Every other path in prod (/metrics, /logs, /deploys, …) has no route
+# and Pomerium answers 404 — so the proxy cannot reach anything but the two
+# gated actions. payments-api still re-verifies the single-use grant with the
+# gate service on every call (defense in depth — see pomerium/README.md).
+
+address: :4300
+insecure_server: true # local demo only — plain HTTP, no TLS
+
+routes:
+  - from: http://localhost:4300
+    to: http://host.docker.internal:4100
+    prefix: /rollback
+    allow_public_unauthenticated_access: true # layered model: enforcement is at the gate + payments-api
+    pass_identity_headers: true
+
+  - from: http://localhost:4300
+    to: http://host.docker.internal:4100
+    prefix: /restart
+    allow_public_unauthenticated_access: true
+    pass_identity_headers: true
