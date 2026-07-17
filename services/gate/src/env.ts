@@ -9,6 +9,9 @@ export const env = parseEnv("gate", {
   // Secret the worker signs sandbox attestations with. The gate verifies them;
   // the agent never holds this, so it cannot forge sandbox evidence.
   WORKER_ATTEST_SECRET: requiredInProd(z.string().min(16)),
+  // Shared grant store. Required in prod so single-use holds across replicas and
+  // survives restarts; unset in dev ⇒ zero-dependency in-memory store.
+  REDIS_URL: requiredInProd(z.string().url()),
 });
 
 /** Internal auth is enforced in prod, or in dev when a secret is explicitly set. */

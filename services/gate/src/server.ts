@@ -2,18 +2,22 @@ import express from "express";
 import cors from "cors";
 import type { GrantRequest, GrantResponse, VerifyRequest } from "../../../src/lib/contract";
 import { DEFAULT_CONTEXT, evaluatePolicy } from "./policy";
-import { GrantStore } from "./grants";
+import { createGrantStore } from "./grants";
 import { DenialThrottle } from "./throttle";
 import { AUTH_ENABLED, ATTEST_ENABLED, env, isDev, logGateConfig } from "./env";
 import { captureRawBody, requireInternalAuth, verifyAttestation } from "../../shared/auth";
+import { asyncHandler, errorHandler, installSafetyNets, installSignalHandlers, onShutdown } from "../../shared/http";
+
+const SERVICE = "gate";
+installSafetyNets(SERVICE);
 
 const PORT = env.PORT;
 const TTL_SECONDS = 60;
 
-const store = new GrantStore();
+const store = createGrantStore(env.REDIS_URL);
 /** Behavior-reactive throttle, keyed on AUTHENTICATED identity + action. */
 const throttle = new DenialThrottle();
-/** Full decision log for GET /grants — the receipts (never includes tokens). */
+/** Bounded decision log for GET /grants — the receipts (never includes tokens). */
 const decisions: object[] = [];
 
 const requireAuth = requireInternalAuth({ secret: env.VIGIL_INTERNAL_SECRET, enabled: AUTH_ENABLED });
@@ -22,9 +26,9 @@ const app = express();
 app.use(cors());
 app.use(express.json({ verify: captureRawBody }));
 
-app.get("/health", (_req, res) => {
-  res.json({ ok: true, standingGrants: store.standing() });
-});
+app.get("/health", asyncHandler(async (_req, res) => {
+  res.status(200).json({ ok: true, standingGrants: await store.standing() });
+}));
 
 /**
  * The gate must not trust self-reported evidence. `sandboxPassed` only counts
@@ -38,7 +42,7 @@ function sandboxProven(gr: GrantRequest): boolean {
   return verifyAttestation(env.WORKER_ATTEST_SECRET, gr.service, gr.deployId, true, gr.attestation);
 }
 
-app.post("/grants", requireAuth, (req, res) => {
+app.post("/grants", requireAuth, asyncHandler(async (req, res) => {
   const gr = req.body as GrantRequest;
   // Identity comes from the authenticated caller, never the request body.
   const requestedBy =
@@ -52,7 +56,7 @@ app.post("/grants", requireAuth, (req, res) => {
   let response: GrantResponse;
   if (result.verdict === "allowed") {
     throttle.reset(key); // success clears the denial counter for this key
-    const g = store.mint(gr.action, gr.service, TTL_SECONDS);
+    const g = await store.mint(gr.action, gr.service, TTL_SECONDS);
     response = { ...result, token: g.token, ttlSeconds: TTL_SECONDS, singleUse: true };
   } else {
     throttle.recordDenial(key);
@@ -75,22 +79,35 @@ app.post("/grants", requireAuth, (req, res) => {
     `[gate] ${response.verdict.toUpperCase()} ${gr.action} ${gr.service} by ${requestedBy} (${response.reason ?? response.scope})`,
   );
   res.json(response);
-});
+}));
 
-app.post("/grants/verify", requireAuth, (req, res) => {
+app.post("/grants/verify", requireAuth, asyncHandler(async (req, res) => {
   const { token, action, service } = req.body as VerifyRequest;
-  const v = store.verifyAndConsume(token, action, service);
+  const v = await store.verifyAndConsume(token, action, service);
   console.log(`[gate] verify ${action} ${service}: ${v.valid ? "OK (consumed)" : `REJECTED (${v.reason})`}`);
   res.json(v);
-});
+}));
 
-app.get("/grants", requireAuth, (_req, res) => {
+app.get("/grants", requireAuth, asyncHandler(async (_req, res) => {
   // Never leak live token strings — redact to a short, non-usable prefix.
-  const grants = store.list().map((g) => ({ ...g, token: `${g.token.slice(0, 8)}…` }));
-  res.json({ standingGrants: store.standing(), grants, decisions });
-});
+  const grants = (await store.list()).map((g) => ({ ...g, token: `${g.token.slice(0, 8)}…` }));
+  res.json({ standingGrants: await store.standing(), grants, decisions });
+}));
 
-app.listen(PORT, () => {
+app.use(errorHandler(SERVICE));
+
+// Bound growth: periodically sweep expired grants + stale throttle entries.
+const sweeper = setInterval(() => {
+  void store.sweep();
+  throttle.sweep();
+}, 30_000);
+
+const server = app.listen(PORT, () => {
   logGateConfig();
   console.log(`[gate] :${PORT} (auth ${AUTH_ENABLED ? "ENFORCED" : "disabled — dev"}, attestation ${ATTEST_ENABLED ? "ENFORCED" : "disabled — dev"})`);
 });
+
+onShutdown(() => { clearInterval(sweeper); });
+onShutdown(() => new Promise<void>((r) => server.close(() => r())));
+onShutdown(() => store.close());
+installSignalHandlers(SERVICE);
