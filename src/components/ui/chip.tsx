@@ -2,15 +2,13 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { Severity, SourceTag } from "@/lib/types";
 
-/* ---- Source chip (Nexla / Zero / Akash / Pomerium / Agent) ---- */
+/* ---- Source chip (Zero / Akash / Pomerium / Vigil) ---- */
 
 const SOURCE_LABELS: Record<SourceTag, string> = {
-  nexla: "Nexla",
   zero: "Zero",
   akash: "Akash",
   pomerium: "Pomerium",
   agent: "Vigil",
-  aws: "Bedrock",
 };
 
 export function SourceChip({

@@ -86,7 +86,7 @@ export function TelemetryPanel({
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
               source
             </div>
-            <div className="mt-1 text-xs text-foreground">Nexla stream</div>
+            <div className="mt-1 text-xs text-foreground">Live traffic</div>
           </div>
         </div>
 

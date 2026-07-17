@@ -133,22 +133,6 @@ export const recentActions: RemediationAction[] = [
 
 export const connectors: Connector[] = [
   {
-    id: "aws",
-    name: "AWS Bedrock",
-    role: "Reasoning + self-correcting loop",
-    status: "connected",
-    detail: "Drives plan, act, observe, re-plan.",
-    accent: "aws",
-  },
-  {
-    id: "nexla",
-    name: "Nexla",
-    role: "Governed live data layer",
-    status: "streaming",
-    detail: "Live alert + telemetry feed, read and write audited.",
-    accent: "nexla",
-  },
-  {
     id: "zero",
     name: "Zero",
     role: "Open capability market",

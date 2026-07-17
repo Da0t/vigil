@@ -19,7 +19,7 @@ export default function ConnectorsPage() {
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
       <PageHeader
         title="Connectors"
-        subtitle="The systems Vigil acts through. The agent reasons on AWS, reads and writes live data through Nexla, buys capabilities per call on Zero, reproduces on Akash, and can only act through the Pomerium gate."
+        subtitle="The systems Vigil acts through. It buys capabilities per call on Zero, reproduces on Akash, and can only act through the Pomerium gate."
         action={<Pill tone="ok">5 connected</Pill>}
       />
 

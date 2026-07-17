@@ -30,7 +30,7 @@ export async function startIncident() {
     await until(() => errorRate() > 10);
     store.mutate((s) => {
       setStep(s, "detect", "active");
-      audit(s, "Alert raised · 5xx over threshold", "nexla", "signal", `${errorRate().toFixed(1)}% 5xx on payments-api`);
+      audit(s, "Alert raised · 5xx over threshold", "agent", "signal", `${errorRate().toFixed(1)}% 5xx on payments-api`);
     });
     await sleep(1200);
 
@@ -40,7 +40,7 @@ export async function startIncident() {
     store.mutate((s) => {
       setStep(s, "detect", "done");
       setStep(s, "context", "active", `${bad.id} · ${bad.note}`);
-      audit(s, `Recent deploy ${bad.id} pulled`, "nexla", "neutral", bad.note);
+      audit(s, `Recent deploy ${bad.id} pulled`, "agent", "neutral", bad.note);
     });
     await sleep(1000);
 

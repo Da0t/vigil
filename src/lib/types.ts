@@ -1,5 +1,5 @@
 export type Severity = "SEV-1" | "SEV-2" | "SEV-3";
-export type SourceTag = "nexla" | "zero" | "akash" | "pomerium" | "agent" | "aws";
+export type SourceTag = "zero" | "akash" | "pomerium" | "agent";
 
 export type IncidentStatus = "active" | "resolving" | "resolved";
 export type StepState = "done" | "active" | "pending" | "failed";

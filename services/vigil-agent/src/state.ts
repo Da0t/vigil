@@ -3,8 +3,8 @@ import type { LoopState } from "../../../src/lib/contract";
 import type { AgentStep, AuditEntry } from "../../../src/lib/types";
 
 export const STEP_DEFS: Omit<AgentStep, "state">[] = [
-  { id: "detect", label: "Detected from live traffic", source: "nexla", detail: "5xx over threshold · no page raised" },
-  { id: "context", label: "Pulled incident context", source: "nexla", detail: "deploy #4821 · recent change set" },
+  { id: "detect", label: "Detected from live traffic", source: "agent", detail: "5xx over threshold · no page raised" },
+  { id: "context", label: "Pulled incident context", source: "agent", detail: "deploy #4821 · recent change set" },
   { id: "capability", label: "Found a capability it lacked", source: "zero", detail: "log-parser · called per use", cost: 0.04 },
   { id: "sandbox", label: "Verified in disposable diagnostic", source: "akash", detail: "awaiting result" },
   { id: "remediation", label: "Requesting remediation", source: "pomerium", detail: "rollback payments-api" },

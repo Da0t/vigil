@@ -14,7 +14,7 @@ const TONE_DOT: Record<NonNullable<AuditEntry["tone"]>, string> = {
   alert: "bg-[hsl(var(--lg-alert))]",
 };
 
-const ACTORS: SourceTag[] = ["nexla", "zero", "akash", "pomerium", "agent", "aws"];
+const ACTORS: SourceTag[] = ["zero", "akash", "pomerium", "agent"];
 
 export function AuditStrip({ audit }: { audit: AuditEntry[] }) {
   const rows = [...audit].reverse();

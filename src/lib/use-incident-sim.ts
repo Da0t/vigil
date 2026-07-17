@@ -44,15 +44,15 @@ function windowSeries(clock: number): number[] {
 const STEP_DEFS: Omit<AgentStep, "state">[] = [
   {
     id: "detect",
-    label: "Detected from live alert stream",
-    source: "nexla",
+    label: "Detected from live traffic",
+    source: "agent",
     detail: "5xx over threshold · no page raised",
   },
   {
     id: "context",
     label: "Pulled incident context",
-    source: "nexla",
-    detail: "deploy #4821 · governed read of recent change set",
+    source: "agent",
+    detail: "deploy #4821 · read of recent change set",
   },
   {
     id: "capability",
@@ -140,7 +140,7 @@ const EVENTS: SimEvent[] = [
     at: 0,
     apply: (s) => {
       setStep(s, "detect", "active");
-      audit(s, "Alert ingested from live stream", "nexla", "signal", "payments-api 5xx");
+      audit(s, "Alert raised · 5xx over threshold", "agent", "signal", "payments-api 5xx");
     },
   },
   {
@@ -149,7 +149,7 @@ const EVENTS: SimEvent[] = [
     apply: (s) => {
       setStep(s, "detect", "done");
       setStep(s, "context", "active");
-      audit(s, "Incident context pulled", "nexla", "neutral", "governed read · deploy #4821");
+      audit(s, "Incident context pulled", "agent", "neutral", "read · deploy #4821");
     },
   },
   {
