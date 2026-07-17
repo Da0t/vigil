@@ -5,8 +5,9 @@ import { AGENT_ROUTES } from "../../../src/lib/contract";
 import { store, computeProgress } from "./state";
 import { errorRate, series } from "./traffic";
 import { startIncident, thrash, resetDemo } from "./orchestrator";
+import { env, logAgentConfig } from "./env";
 
-const PORT = Number(process.env.PORT ?? 4000);
+const PORT = env.PORT;
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -41,4 +42,4 @@ setInterval(() => {
   });
 }, 250);
 
-app.listen(PORT, () => console.log(`[vigil-agent] :${PORT}`));
+app.listen(PORT, () => { logAgentConfig(); console.log(`[vigil-agent] :${PORT}`); });

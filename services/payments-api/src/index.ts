@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
 import type { VerifyResponse } from "../../../src/lib/contract";
+import { env, logPaymentsConfig } from "./env";
 
-const PORT = Number(process.env.PORT ?? 4100);
-const GATE_URL = process.env.GATE_URL;
+const PORT = env.PORT;
+const GATE_URL = env.GATE_URL;
 
 interface Deploy { id: string; at: string; status: "healthy" | "bad" | "rolled_back"; note: string }
 
@@ -106,4 +107,4 @@ app.post("/restart", async (req, res) => {
   res.json({ ok: true, restarted: true, note: "restart does not fix a bad deploy" });
 });
 
-app.listen(PORT, () => console.log(`[payments-api] :${PORT}`));
+app.listen(PORT, () => { logPaymentsConfig(); console.log(`[payments-api] :${PORT}`); });

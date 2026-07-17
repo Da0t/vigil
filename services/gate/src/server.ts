@@ -3,8 +3,9 @@ import cors from "cors";
 import type { GrantRequest, GrantResponse, VerifyRequest } from "../../../src/lib/contract";
 import { DEFAULT_CONTEXT, evaluatePolicy } from "./policy";
 import { GrantStore } from "./grants";
+import { env, logGateConfig } from "./env";
 
-const PORT = Number(process.env.PORT ?? 4200);
+const PORT = env.PORT;
 const TTL_SECONDS = 60;
 
 const store = new GrantStore();
@@ -48,4 +49,4 @@ app.get("/grants", (_req, res) => {
   res.json({ standingGrants: store.standing(), grants: store.list(), decisions });
 });
 
-app.listen(PORT, () => console.log(`[gate] :${PORT}`));
+app.listen(PORT, () => { logGateConfig(); console.log(`[gate] :${PORT}`); });

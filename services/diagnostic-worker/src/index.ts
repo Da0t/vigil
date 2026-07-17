@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
 import { VLOG_LINE, type DiagnoseRequest, type DiagnoseResponse } from "./contract-lite";
+import { env, logWorkerConfig } from "./env";
 
-const PORT = Number(process.env.PORT ?? 4400);
+const PORT = env.PORT;
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -52,4 +53,4 @@ app.post("/diagnose", (req, res) => {
   res.json(response);
 });
 
-app.listen(PORT, () => console.log(`[diagnostic-worker] :${PORT}`));
+app.listen(PORT, () => { logWorkerConfig(); console.log(`[diagnostic-worker] :${PORT}`); });
