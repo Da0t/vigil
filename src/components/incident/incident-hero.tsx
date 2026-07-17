@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useIncidentSim } from "@/lib/use-incident-sim";
-import { useIncidentLive } from "@/lib/use-incident-live";
+import { useIncidentLive, type LiveStatus } from "@/lib/use-incident-live";
 import { GlassCard } from "@/components/ui/card";
 import { SimControls } from "./sim-controls";
 import { TelemetryPanel } from "./telemetry-panel";
@@ -13,15 +13,30 @@ import { AuditStrip } from "./audit-strip";
 import { BlastRadiusPanel } from "./blast-radius-panel";
 import type { Incident } from "@/lib/types";
 
+/** Connection badge copy + styling. Only "off" reads as the scripted sim. */
+const STATUS_BADGE: Record<LiveStatus, { label: string; className: string; pulse: boolean }> = {
+  off: { label: "SIM · scripted", className: "bg-secondary text-muted-foreground", pulse: false },
+  connecting: { label: "CONNECTING", className: "bg-amber-500/15 text-amber-500", pulse: true },
+  live: { label: "LIVE · real services", className: "bg-emerald-500/15 text-emerald-500", pulse: false },
+  reconnecting: { label: "RECONNECTING", className: "bg-amber-500/15 text-amber-500", pulse: true },
+  lost: { label: "STREAM LOST", className: "bg-red-500/15 text-red-500", pulse: true },
+};
+
 export function IncidentHero({ incident }: { incident: Incident }) {
   const sim = useIncidentSim();
   const live = useIncidentLive();
-  const isLive = live.status === "live" && live.state !== null;
-  const state = isLive ? live.state! : sim.state;
-  const onToggle = isLive
+  // Agent configured → the live stream is authoritative. Only "off" falls
+  // back to the scripted sim; a dropped stream RETAINS the last snapshot.
+  const agentMode = live.status !== "off";
+  const hasLiveSnapshot = agentMode && live.state !== null;
+  const state = hasLiveSnapshot ? live.state! : sim.state;
+  const onToggle = agentMode
     ? (!state.started || state.finished ? live.start : live.reset)
     : sim.toggle;
-  const onRestart = isLive ? live.reset : sim.restart;
+  const onRestart = agentMode ? live.reset : sim.restart;
+
+  const badge = STATUS_BADGE[live.status];
+  const interrupted = live.status === "reconnecting" || live.status === "lost";
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
@@ -37,19 +52,35 @@ export function IncidentHero({ incident }: { incident: Incident }) {
       <GlassCard className="mt-4 p-4">
         <div className="flex items-center">
           <div className="flex-1">
-            <SimControls state={state} onToggle={onToggle} onRestart={onRestart} />
+            <SimControls
+              state={state}
+              onToggle={onToggle}
+              onRestart={onRestart}
+              disabled={live.controlsDisabled}
+            />
           </div>
           <span
             className={
-              "ml-3 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide " +
-              (isLive
-                ? "bg-emerald-500/15 text-emerald-500"
-                : "bg-secondary text-muted-foreground")
+              "ml-3 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide " +
+              badge.className
             }
           >
-            {isLive ? "LIVE · real services" : "SIM · scripted"}
+            {badge.pulse && (
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+            )}
+            {badge.label}
           </span>
         </div>
+
+        {agentMode && interrupted && (
+          <p className="mt-2 text-[11px] text-amber-500">
+            Stream interrupted — showing the last live snapshot,{" "}
+            {live.status === "lost" ? "still retrying" : "reconnecting"}…
+          </p>
+        )}
+        {live.controlError && (
+          <p className="mt-2 text-[11px] text-red-500">{live.controlError}</p>
+        )}
       </GlassCard>
 
       {/* main grid */}
