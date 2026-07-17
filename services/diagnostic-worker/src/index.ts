@@ -1,0 +1,55 @@
+import express from "express";
+import cors from "cors";
+import { VLOG_LINE, type DiagnoseRequest, type DiagnoseResponse } from "./contract-lite";
+
+const PORT = Number(process.env.PORT ?? 4400);
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: "2mb" }));
+
+app.get("/health", (_req, res) => { res.json({ ok: true, role: "vigil-diagnostic-worker" }); });
+
+app.post("/diagnose", (req, res) => {
+  const { service, deployId, candidateAction, rawLogs } = req.body as DiagnoseRequest;
+
+  const errors: { component: string; code: string; rest: string }[] = [];
+  let sawDeployMarker = false;
+  for (const line of (rawLogs ?? "").split("\n")) {
+    const m = VLOG_LINE.exec(line.trim());
+    if (!m?.groups) continue;
+    if (m.groups.code === "DEPLOY_APPLIED" && m.groups.rest.includes(`deploy=${deployId}`)) sawDeployMarker = true;
+    if (m.groups.lvl === "E") errors.push({ component: m.groups.component, code: m.groups.code, rest: m.groups.rest });
+  }
+
+  const top = <K extends "component" | "code">(k: K) => {
+    const map = new Map<string, number>();
+    for (const e of errors) map.set(e[k], (map.get(e[k]) ?? 0) + 1);
+    return [...map.entries()].sort((a, b) => b[1] - a[1])[0];
+  };
+  const topComponent = top("component");
+  const topCode = top("code");
+  const dominant = topComponent && errors.length > 0 && topComponent[1] / errors.length > 0.7;
+  const cfgRelated = !!topCode && /CFG|TIMEOUT|CONFIG/.test(topCode[0]);
+  const referencesDeploy = errors.some((e) => e.rest.includes(`deploy=${deployId}`));
+
+  const checks = [
+    { name: "errors_present", passed: errors.length > 0, detail: `${errors.length} error lines` },
+    { name: "single_component_dominates", passed: !!dominant, detail: topComponent?.[0] },
+    { name: "signature_is_config_related", passed: cfgRelated, detail: topCode?.[0] },
+    { name: "errors_reference_deploy", passed: referencesDeploy || sawDeployMarker, detail: deployId },
+  ];
+  const passed = checks.every((c) => c.passed);
+
+  const response: DiagnoseResponse = {
+    sandboxPassed: passed,
+    rootCause: passed
+      ? `deploy ${deployId} changed ${topComponent?.[0]} config handling (${topCode?.[0]})`
+      : "evidence inconclusive — human review required",
+    recommendedAction: passed ? candidateAction : "escalate",
+    checks,
+  };
+  console.log(`[worker] diagnose ${service}/${deployId}: sandbox_passed=${passed}`);
+  res.json(response);
+});
+
+app.listen(PORT, () => console.log(`[diagnostic-worker] :${PORT}`));
