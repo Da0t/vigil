@@ -5,7 +5,7 @@ import { AGENT_ROUTES } from "../../../src/lib/contract";
 import { store, computeProgress } from "./state";
 import { errorRate, series } from "./traffic";
 import { startIncident, thrash, resetDemo } from "./orchestrator";
-import { env, logAgentConfig } from "./env";
+import { env, isDev, logAgentConfig } from "./env";
 
 const PORT = env.PORT;
 const app = express();
@@ -28,9 +28,15 @@ app.get(AGENT_ROUTES.events, (req, res) => {
 });
 
 app.get(AGENT_ROUTES.state, (_req, res) => { res.json(store.state); });
-app.post(AGENT_ROUTES.start, (_req, res) => { startIncident(); res.json({ ok: true }); });
-app.post(AGENT_ROUTES.thrash, (_req, res) => { thrash(); res.json({ ok: true }); });
-app.post(AGENT_ROUTES.reset, async (_req, res) => { await resetDemo(); res.json({ ok: true }); });
+
+// Demo trigger controls. Unauthenticated by nature (the browser drives them),
+// so they are dev-only. In prod the loop is driven by real alerting, not a
+// button — these are compiled out (404). See PRODUCTION.md for the prod trigger.
+if (isDev) {
+  app.post(AGENT_ROUTES.start, (_req, res) => { startIncident(); res.json({ ok: true }); });
+  app.post(AGENT_ROUTES.thrash, (_req, res) => { thrash(); res.json({ ok: true }); });
+  app.post(AGENT_ROUTES.reset, async (_req, res) => { await resetDemo(); res.json({ ok: true }); });
+}
 
 // Live telemetry ticker: keeps chart + progress fresh between orchestrator beats.
 setInterval(() => {

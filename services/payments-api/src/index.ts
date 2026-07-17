@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import type { VerifyResponse } from "../../../src/lib/contract";
-import { AUTH_ENABLED, env, isProd, logPaymentsConfig } from "./env";
+import { AUTH_ENABLED, env, isDev, isProd, logPaymentsConfig } from "./env";
 import { captureRawBody, requireInternalAuth, signRequest } from "../../shared/auth";
 
 const PORT = env.PORT;
@@ -99,15 +99,20 @@ app.get("/deploys", (_req, res) => {
   res.json(deploys.map((d) => ({ ...d, current: d.id === current })));
 });
 
-app.post("/admin/break", (_req, res) => {
-  broken = true;
-  const bad = deploys.find((d) => d.id === "#4821");
-  if (bad) bad.status = "bad";
-  log("I", "deployer", "DEPLOY_APPLIED", { deploy: "#4821", files: "stripe_adapter.ts" });
-  res.json({ ok: true, broken });
-});
+// Demo-only scaffolding: these routes fabricate/undo an incident. In prod the
+// service breaks for real, so they are compiled out entirely (404) rather than
+// left as an unauthenticated way to break production.
+if (isDev) {
+  app.post("/admin/break", (_req, res) => {
+    broken = true;
+    const bad = deploys.find((d) => d.id === "#4821");
+    if (bad) bad.status = "bad";
+    log("I", "deployer", "DEPLOY_APPLIED", { deploy: "#4821", files: "stripe_adapter.ts" });
+    res.json({ ok: true, broken });
+  });
 
-app.post("/admin/reset", (_req, res) => { seed(); res.json({ ok: true }); });
+  app.post("/admin/reset", (_req, res) => { seed(); res.json({ ok: true }); });
+}
 
 app.post("/rollback", requireAuth, async (req, res) => {
   const g = await grantValid(req.header("x-vigil-grant"), "rollback");
