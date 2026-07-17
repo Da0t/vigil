@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Siren,
+  Waypoints,
   ShieldCheck,
   Cable,
   Settings,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/incidents", label: "Incidents", icon: Siren },
+  { href: "/infrastructure", label: "Infrastructure", icon: Waypoints },
   { href: "/actions", label: "Actions", icon: ShieldCheck },
   { href: "/connectors", label: "Connectors", icon: Cable },
   { href: "/settings", label: "Settings", icon: Settings },

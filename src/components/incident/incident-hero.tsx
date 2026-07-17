@@ -9,6 +9,7 @@ import { TelemetryPanel } from "./telemetry-panel";
 import { AgentTimeline } from "./agent-timeline";
 import { GatePanel } from "./gate-panel";
 import { AuditStrip } from "./audit-strip";
+import { BlastRadiusPanel } from "./blast-radius-panel";
 import type { Incident } from "@/lib/types";
 
 export function IncidentHero({ incident }: { incident: Incident }) {
@@ -56,6 +57,11 @@ export function IncidentHero({ incident }: { incident: Incident }) {
         <div className="lg:col-span-5">
           <GatePanel state={state} />
         </div>
+      </div>
+
+      {/* infrastructure knowledge graph */}
+      <div className="mt-4">
+        <BlastRadiusPanel state={state} />
       </div>
 
       {/* audit */}
