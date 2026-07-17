@@ -1,6 +1,7 @@
 import { audit, computeProgress, setStep, stamp, store } from "./state";
 import { clearTraffic, errorRate, startTraffic, stopTraffic } from "./traffic";
 import { PAYMENTS_URL, applyRemediation, diagnose, parseLogs, requestGrant } from "./clients";
+import { hypothesize } from "./hypothesis";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -55,6 +56,9 @@ export async function startIncident() {
       s.budgetUsed = Number((s.budgetUsed + (parsed.costUsd ?? 0.04)).toFixed(2));
       audit(s, `Capability called · $${(parsed.costUsd ?? 0.04).toFixed(2)} · ${parsed.parserSource}`, "zero", "neutral", `${parsed.errorSignature} in ${parsed.suspectComponent}`);
     });
+    // Optional LLM hypothesis (A5) — no-op unless ANTHROPIC_API_KEY is set.
+    const hypo = await hypothesize(parsed, bad.note);
+    if (hypo) store.mutate((s) => audit(s, "Hypothesis formed", "agent", "neutral", hypo));
     await sleep(600);
 
     // SANDBOX — disposable diagnostic evidence before any prod ask
