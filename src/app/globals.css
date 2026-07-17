@@ -1,0 +1,265 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Vigil design tokens - black & red liquid glass
+   Dark is the showcase; light is a graceful fallback.
+   Rule: red = signal (alert + action) only.
+         bone-white (--lg-ok) = nominal / allowed (never green).
+         black = the room.
+   ============================================================ */
+
+:root {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+
+/* Light fallback (rarely shown) */
+:root {
+  --background: 0 0% 97%;
+  --foreground: 0 0% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 8%;
+  --primary: 2 80% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 4% 40%;
+  --accent: 0 40% 94%;
+  --accent-foreground: 2 70% 42%;
+  --destructive: 0 84% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 6% 86%;
+  --input: 0 6% 88%;
+  --ring: 2 82% 52%;
+  --radius: 1rem;
+
+  --lg-surface: 0 0% 100%;
+  --lg-surface-alpha: 0.7;
+  --lg-hair: 0 0% 20%;
+  --lg-glow-1: 2 85% 55%;
+  --lg-glow-2: 350 80% 55%;
+  --lg-glow-3: 12 68% 55%;
+  --lg-alert: 0 84% 52%;
+  --lg-amber: 36 92% 46%;
+  --lg-ok: 0 0% 20%;
+  --lg-blur: 20px;
+}
+
+/* Dark - the default & the showcase */
+.dark {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 96%;
+  --popover: 0 6% 6%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 2 80% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 13%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 6% 63%;
+  --accent: 0 32% 14%;
+  --accent-foreground: 2 82% 70%;
+  --destructive: 0 90% 59%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 8% 16%;
+  --input: 0 8% 15%;
+  --ring: 2 82% 56%;
+  --radius: 1rem;
+
+  --lg-surface: 0 6% 9%;
+  --lg-surface-alpha: 0.55;
+  --lg-hair: 0 0% 92%;
+  --lg-glow-1: 2 85% 48%;
+  --lg-glow-2: 350 80% 42%;
+  --lg-glow-3: 12 68% 28%;
+  --lg-alert: 0 90% 60%;
+  --lg-amber: 36 92% 56%;
+  --lg-ok: 0 0% 92%;
+  --lg-blur: 24px;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Ambient ember aurora - restrained, drifting */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -20% -10% -10% -10%;
+    z-index: -2;
+    pointer-events: none;
+    background:
+      radial-gradient(46% 40% at 18% 8%, hsl(var(--lg-glow-1) / 0.16), transparent 70%),
+      radial-gradient(40% 44% at 88% 22%, hsl(var(--lg-glow-2) / 0.13), transparent 72%),
+      radial-gradient(60% 50% at 60% 108%, hsl(var(--lg-glow-3) / 0.18), transparent 75%);
+    filter: blur(24px);
+    animation: aurora-drift 32s ease-in-out infinite alternate;
+  }
+
+  /* Fine grain */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  @keyframes aurora-drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(-2%, 1.5%, 0) scale(1.05);
+    }
+    100% {
+      transform: translate3d(2%, -1%, 0) scale(1.02);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body::before {
+      animation: none;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.32);
+    color: hsl(var(--foreground));
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 30%);
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* Core liquid-glass pane */
+  .lg-glass {
+    position: relative;
+    background: hsl(var(--lg-surface) / var(--lg-surface-alpha));
+    backdrop-filter: blur(var(--lg-blur)) saturate(175%);
+    -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(175%);
+    border: 1px solid hsl(var(--lg-hair) / 0.09);
+    box-shadow:
+      inset 0 1px 0 0 hsl(var(--lg-hair) / 0.08),
+      inset 0 0 0 1px hsl(var(--lg-hair) / 0.02),
+      0 18px 50px -24px rgba(0, 0, 0, 0.9),
+      0 4px 14px -8px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Bright refractive rim, top-left */
+  .lg-specular::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      145deg,
+      hsl(var(--lg-hair) / 0.35),
+      hsl(var(--lg-hair) / 0.04) 30%,
+      transparent 55%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Hairline border only */
+  .lg-hair {
+    border: 1px solid hsl(var(--lg-hair) / 0.1);
+  }
+
+  /* Luminous red accent ring for active / primary state */
+  .lg-glow {
+    box-shadow:
+      inset 0 1px 0 0 hsl(var(--lg-hair) / 0.08),
+      0 0 0 1px hsl(var(--primary) / 0.4),
+      0 0 34px -6px hsl(var(--primary) / 0.5),
+      0 18px 50px -24px rgba(0, 0, 0, 0.9);
+    border-color: hsl(var(--primary) / 0.45);
+  }
+
+  /* Alert glow (deny / critical) */
+  .lg-glow-alert {
+    box-shadow:
+      inset 0 1px 0 0 hsl(var(--lg-hair) / 0.08),
+      0 0 0 1px hsl(var(--lg-alert) / 0.5),
+      0 0 40px -4px hsl(var(--lg-alert) / 0.55),
+      0 18px 50px -24px rgba(0, 0, 0, 0.9);
+    border-color: hsl(var(--lg-alert) / 0.5);
+  }
+
+  /* Text helpers */
+  .text-ok {
+    color: hsl(var(--lg-ok));
+  }
+  .text-alert {
+    color: hsl(var(--lg-alert));
+  }
+  .text-amber {
+    color: hsl(var(--lg-amber));
+  }
+
+  .grid-lines {
+    background-image:
+      linear-gradient(hsl(var(--lg-hair) / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--lg-hair) / 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+}
