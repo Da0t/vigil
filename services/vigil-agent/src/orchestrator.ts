@@ -91,6 +91,8 @@ export async function startIncident() {
       action: "rollback", service: "payments-api", servicesAffected: 1,
       sandboxPassed: diag.sandboxPassed, budgetUsed: store.state.budgetUsed,
       consecutiveFailures: 0, requestedBy: "vigil-agent",
+      // Forward the worker's signed proof so the gate need not trust the boolean.
+      deployId: bad.id, attestation: diag.attestation,
     });
 
     if (grant.verdict === "denied" || !grant.token) {

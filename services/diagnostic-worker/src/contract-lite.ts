@@ -19,6 +19,8 @@ export interface DiagnoseResponse {
   rootCause: string;
   recommendedAction: string;
   checks: { name: string; passed: boolean; detail?: string }[];
+  /** Worker-signed attestation over {service, deployId, sandboxPassed}. */
+  attestation?: string;
 }
 
 export const VLOG_LINE =

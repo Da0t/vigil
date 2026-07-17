@@ -1,10 +1,13 @@
 import express from "express";
 import cors from "cors";
 import type { VerifyResponse } from "../../../src/lib/contract";
-import { env, logPaymentsConfig } from "./env";
+import { AUTH_ENABLED, env, isProd, logPaymentsConfig } from "./env";
+import { captureRawBody, requireInternalAuth, signRequest } from "../../shared/auth";
 
 const PORT = env.PORT;
 const GATE_URL = env.GATE_URL;
+
+const requireAuth = requireInternalAuth({ secret: env.VIGIL_INTERNAL_SECRET, enabled: AUTH_ENABLED });
 
 interface Deploy { id: string; at: string; status: "healthy" | "bad" | "rolled_back"; note: string }
 
@@ -34,22 +37,39 @@ function log(lvl: "E" | "W" | "I", component: string, code: string, kv: Record<s
 
 async function grantValid(token: string | undefined, action: string): Promise<{ ok: boolean; reason?: string }> {
   if (!GATE_URL) {
-    console.warn(`[payments-api] GATE_URL unset — ${action} allowed ungated (pre-merge dev only)`);
+    // Fail CLOSED in prod: with no gate we cannot prove a grant, so refuse.
+    // Fail CONVENIENT in dev: the ungated local path keeps the demo runnable.
+    if (isProd) return { ok: false, reason: "no gate configured (fail closed)" };
+    console.warn(`[payments-api] GATE_URL unset — ${action} allowed ungated (dev only)`);
     return { ok: true };
   }
   if (!token) return { ok: false, reason: "no grant presented" };
-  const r = await fetch(`${GATE_URL}/grants/verify`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ token, action, service: "payments-api" }),
-  });
-  const v = (await r.json()) as VerifyResponse;
-  return v.valid ? { ok: true } : { ok: false, reason: v.reason };
+
+  const path = "/grants/verify";
+  const body = JSON.stringify({ token, action, service: "payments-api" });
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (env.VIGIL_INTERNAL_SECRET) {
+    Object.assign(headers, signRequest(env.VIGIL_INTERNAL_SECRET, "payments-api", "POST", path, body));
+  }
+  try {
+    const r = await fetch(`${GATE_URL}${path}`, {
+      method: "POST",
+      headers,
+      body,
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) return { ok: false, reason: `gate verify failed (${r.status})` };
+    const v = (await r.json()) as VerifyResponse;
+    return v.valid ? { ok: true } : { ok: false, reason: v.reason };
+  } catch (e) {
+    // Fail closed: unreachable gate ⇒ unproven grant ⇒ reject.
+    return { ok: false, reason: `gate unreachable (${(e as Error).message})` };
+  }
 }
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ verify: captureRawBody }));
 
 app.get("/health", (_req, res) => { res.json({ ok: !broken, deploy: current }); });
 
@@ -89,7 +109,7 @@ app.post("/admin/break", (_req, res) => {
 
 app.post("/admin/reset", (_req, res) => { seed(); res.json({ ok: true }); });
 
-app.post("/rollback", async (req, res) => {
+app.post("/rollback", requireAuth, async (req, res) => {
   const g = await grantValid(req.header("x-vigil-grant"), "rollback");
   if (!g.ok) { res.status(403).json({ error: "grant rejected", reason: g.reason }); return; }
   broken = false;
@@ -100,7 +120,7 @@ app.post("/rollback", async (req, res) => {
   res.json({ ok: true, deploy: current });
 });
 
-app.post("/restart", async (req, res) => {
+app.post("/restart", requireAuth, async (req, res) => {
   const g = await grantValid(req.header("x-vigil-grant"), "restart");
   if (!g.ok) { res.status(403).json({ error: "grant rejected", reason: g.reason }); return; }
   log("I", "supervisor", "RESTART_OK", { deploy: current });

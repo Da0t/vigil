@@ -3,13 +3,26 @@ import type {
 } from "../../../src/lib/contract";
 import { parseLogsFallback } from "./parse-fallback";
 import { parseLogsLive } from "./integrations/zero-live";
+import { env } from "./env";
+import { signRequest } from "../../shared/auth";
 
-export const PAYMENTS_URL = process.env.PAYMENTS_URL ?? "http://localhost:4100";
-const GATE_URL = process.env.GATE_URL;
-const WORKER_URL = process.env.WORKER_URL;
+export const PAYMENTS_URL = env.PAYMENTS_URL;
+const GATE_URL = env.GATE_URL;
+const WORKER_URL = env.WORKER_URL;
+
+/** Sign an outbound internal call as "vigil-agent" (no-op in dev without a secret). */
+function authHeaders(method: string, url: string, rawBody: string): Record<string, string> {
+  if (!env.VIGIL_INTERNAL_SECRET) return {};
+  return signRequest(env.VIGIL_INTERNAL_SECRET, "vigil-agent", method, new URL(url).pathname, rawBody);
+}
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const raw = JSON.stringify(body);
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders("POST", url, raw) },
+    body: raw,
+  });
   return (await r.json()) as T;
 }
 
@@ -49,7 +62,10 @@ export async function diagnose(req: DiagnoseRequest): Promise<DiagnoseResponse> 
 }
 
 export async function applyRemediation(action: "rollback" | "restart", token: string) {
-  const base = process.env.POMERIUM_URL ?? PAYMENTS_URL;
-  const r = await fetch(`${base}/${action}`, { method: "POST", headers: { "x-vigil-grant": token } });
+  // Destructive calls route through Pomerium in prod; the direct fallback is dev-only.
+  const base = env.POMERIUM_URL ?? PAYMENTS_URL;
+  const url = `${base}/${action}`;
+  const headers: Record<string, string> = { "x-vigil-grant": token, ...authHeaders("POST", url, "") };
+  const r = await fetch(url, { method: "POST", headers });
   return { ok: r.ok, status: r.status, body: await r.json().catch(() => ({})) };
 }

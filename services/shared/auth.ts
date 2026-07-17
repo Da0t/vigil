@@ -15,6 +15,7 @@
  * the upgrade path is per-caller keys or mTLS/SPIFFE, noted in PRODUCTION.md.
  */
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import type { IncomingMessage, ServerResponse } from "node:http";
 
 /** Requests whose timestamp is more than this far from the receiver's clock are rejected. */
 export const CLOCK_SKEW_MS = 30_000;
@@ -129,8 +130,8 @@ export function verifyAttestation(
  * caller signed are available to the auth middleware (Express otherwise
  * discards the raw body after parsing).
  */
-export function captureRawBody(req: { rawBody?: string }, _res: unknown, buf: Buffer): void {
-  req.rawBody = buf.length ? buf.toString("utf8") : "";
+export function captureRawBody(req: IncomingMessage, _res: ServerResponse, buf: Buffer): void {
+  (req as IncomingMessage & { rawBody?: string }).rawBody = buf.length ? buf.toString("utf8") : "";
 }
 
 // Minimal structural request/response types so shared/ needn't depend on express.

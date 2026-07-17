@@ -1,16 +1,19 @@
 import express from "express";
 import cors from "cors";
 import { VLOG_LINE, type DiagnoseRequest, type DiagnoseResponse } from "./contract-lite";
-import { env, logWorkerConfig } from "./env";
+import { AUTH_ENABLED, ATTEST_ENABLED, env, logWorkerConfig } from "./env";
+import { captureRawBody, requireInternalAuth, signAttestation } from "./auth-lite";
 
 const PORT = env.PORT;
+const requireAuth = requireInternalAuth({ secret: env.VIGIL_INTERNAL_SECRET, enabled: AUTH_ENABLED });
+
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "2mb", verify: captureRawBody }));
 
 app.get("/health", (_req, res) => { res.json({ ok: true, role: "vigil-diagnostic-worker" }); });
 
-app.post("/diagnose", (req, res) => {
+app.post("/diagnose", requireAuth, (req, res) => {
   const { service, deployId, candidateAction, rawLogs } = req.body as DiagnoseRequest;
 
   const errors: { component: string; code: string; rest: string }[] = [];
@@ -41,6 +44,13 @@ app.post("/diagnose", (req, res) => {
   ];
   const passed = checks.every((c) => c.passed);
 
+  // Sign the result so the gate can trust `sandboxPassed` without trusting the
+  // agent. Only the worker holds WORKER_ATTEST_SECRET.
+  const attestation =
+    ATTEST_ENABLED && env.WORKER_ATTEST_SECRET
+      ? signAttestation(env.WORKER_ATTEST_SECRET, service, deployId, passed)
+      : undefined;
+
   const response: DiagnoseResponse = {
     sandboxPassed: passed,
     rootCause: passed
@@ -48,8 +58,9 @@ app.post("/diagnose", (req, res) => {
       : "evidence inconclusive — human review required",
     recommendedAction: passed ? candidateAction : "escalate",
     checks,
+    attestation,
   };
-  console.log(`[worker] diagnose ${service}/${deployId}: sandbox_passed=${passed}`);
+  console.log(`[worker] diagnose ${service}/${deployId}: sandbox_passed=${passed}${attestation ? " (attested)" : ""}`);
   res.json(response);
 });
 

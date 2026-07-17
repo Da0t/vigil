@@ -12,9 +12,16 @@ const VIGIL_ENV = process.env.VIGIL_ENV ?? process.env.NODE_ENV ?? "development"
 export const isProd = VIGIL_ENV === "production";
 export const isDev = !isProd;
 
+// Required in prod, optional in dev (fail closed in prod, fail convenient in dev).
+const secret = isProd ? z.string().min(16) : z.string().min(16).optional();
+
 const result = z
   .object({
     PORT: z.coerce.number().int().positive().default(4400),
+    // Verifies inbound /diagnose calls from the agent.
+    VIGIL_INTERNAL_SECRET: secret,
+    // Signs the sandbox attestation the gate later verifies.
+    WORKER_ATTEST_SECRET: secret,
   })
   .safeParse(process.env);
 
@@ -28,6 +35,11 @@ if (!result.success) {
 }
 
 export const env = result.data;
+
+/** Internal auth is enforced in prod, or in dev when a secret is explicitly set. */
+export const AUTH_ENABLED = isProd || !!env.VIGIL_INTERNAL_SECRET;
+/** Sign attestations in prod, or in dev when the attest secret is set. */
+export const ATTEST_ENABLED = isProd || !!env.WORKER_ATTEST_SECRET;
 
 export function logWorkerConfig(): void {
   console.log(
