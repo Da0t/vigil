@@ -1,8 +1,16 @@
 import express from "express";
 import cors from "cors";
-import { VLOG_LINE, type DiagnoseRequest, type DiagnoseResponse } from "./contract-lite";
+import { z } from "zod";
+import { VLOG_LINE, type DiagnoseResponse } from "./contract-lite";
 import { AUTH_ENABLED, ATTEST_ENABLED, env, logWorkerConfig } from "./env";
 import { captureRawBody, requireInternalAuth, signAttestation } from "./auth-lite";
+
+const diagnoseSchema = z.object({
+  service: z.string().min(1),
+  deployId: z.string().min(1),
+  candidateAction: z.string().min(1),
+  rawLogs: z.string(),
+});
 
 const PORT = env.PORT;
 const requireAuth = requireInternalAuth({ secret: env.VIGIL_INTERNAL_SECRET, enabled: AUTH_ENABLED });
@@ -14,7 +22,15 @@ app.use(express.json({ limit: "2mb", verify: captureRawBody }));
 app.get("/health", (_req, res) => { res.json({ ok: true, role: "vigil-diagnostic-worker" }); });
 
 app.post("/diagnose", requireAuth, (req, res) => {
-  const { service, deployId, candidateAction, rawLogs } = req.body as DiagnoseRequest;
+  const parsed = diagnoseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      error: "invalid request body",
+      issues: parsed.error.issues.map((i) => ({ path: i.path.join(".") || "(root)", message: i.message })),
+    });
+    return;
+  }
+  const { service, deployId, candidateAction, rawLogs } = parsed.data;
 
   const errors: { component: string; code: string; rest: string }[] = [];
   let sawDeployMarker = false;

@@ -6,7 +6,8 @@ import { createGrantStore } from "./grants";
 import { DenialThrottle } from "./throttle";
 import { AUTH_ENABLED, ATTEST_ENABLED, env, isDev, logGateConfig } from "./env";
 import { captureRawBody, requireInternalAuth, verifyAttestation } from "../../shared/auth";
-import { asyncHandler, errorHandler, installSafetyNets, installSignalHandlers, onShutdown } from "../../shared/http";
+import { asyncHandler, errorHandler, installSafetyNets, installSignalHandlers, onShutdown, validateBody } from "../../shared/http";
+import { grantRequestSchema, verifyRequestSchema } from "./validation";
 
 const SERVICE = "gate";
 installSafetyNets(SERVICE);
@@ -42,7 +43,7 @@ function sandboxProven(gr: GrantRequest): boolean {
   return verifyAttestation(env.WORKER_ATTEST_SECRET, gr.service, gr.deployId, true, gr.attestation);
 }
 
-app.post("/grants", requireAuth, asyncHandler(async (req, res) => {
+app.post("/grants", requireAuth, validateBody(grantRequestSchema), asyncHandler(async (req, res) => {
   const gr = req.body as GrantRequest;
   // Identity comes from the authenticated caller, never the request body.
   const requestedBy =
@@ -81,7 +82,7 @@ app.post("/grants", requireAuth, asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-app.post("/grants/verify", requireAuth, asyncHandler(async (req, res) => {
+app.post("/grants/verify", requireAuth, validateBody(verifyRequestSchema), asyncHandler(async (req, res) => {
   const { token, action, service } = req.body as VerifyRequest;
   const v = await store.verifyAndConsume(token, action, service);
   console.log(`[gate] verify ${action} ${service}: ${v.valid ? "OK (consumed)" : `REJECTED (${v.reason})`}`);

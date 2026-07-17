@@ -10,6 +10,27 @@
  * express dependency.
  */
 import type { ErrorRequestHandler, RequestHandler } from "express";
+import type { ZodType } from "zod";
+
+/**
+ * Validate req.body at the boundary with a zod schema. Rejects malformed input
+ * with 400 (and the offending paths) instead of letting `undefined` flow into
+ * policy logic. On success, req.body is replaced with the parsed/typed value.
+ */
+export function validateBody(schema: ZodType): RequestHandler {
+  return (req, res, next) => {
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({
+        error: "invalid request body",
+        issues: result.error.issues.map((i) => ({ path: i.path.join(".") || "(root)", message: i.message })),
+      });
+      return;
+    }
+    req.body = result.data;
+    next();
+  };
+}
 
 /** Wrap an async Express handler so a rejected promise reaches the error middleware. */
 export function asyncHandler(fn: RequestHandler): RequestHandler {
