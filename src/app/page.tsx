@@ -11,7 +11,6 @@ import {
 import { GlassCard } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat";
 import { SeverityChip, Pill, SourceChip } from "@/components/ui/chip";
-import { StatusDot } from "@/components/ui/status-dot";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Button } from "@/components/ui/button";
 import { incidents, connectors, recentActions, PRIMARY_INCIDENT_ID } from "@/lib/mock-data";
@@ -25,8 +24,7 @@ export default function DashboardPage() {
       {/* hero row */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            <StatusDot tone="signal" pulse className="h-1.5 w-1.5" />
+          <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-[hsl(var(--primary))]">
             Agent online · watching
           </div>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -52,10 +50,7 @@ export default function DashboardPage() {
         {/* spotlight incident */}
         <GlassCard glow className="lg:col-span-7">
           <div className="flex items-center justify-between border-b border-border/50 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-              <StatusDot tone="alert" pulse />
-              Live incident
-            </div>
+            <div className="text-sm font-semibold tracking-tight">Live incident</div>
             <SeverityChip severity={primary.severity} />
           </div>
           <div className="p-5">
@@ -64,13 +59,11 @@ export default function DashboardPage() {
               {primary.service} · started {primary.startedAt} · deploy {primary.deploy}
             </p>
             <div className="my-4">
-              <Sparkline series={primary.metric.series} height={92} tone="signal" />
+              <Sparkline series={primary.metric.series} height={92} tone="signal" showHead={false} />
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Pill tone="alert">
-                  <StatusDot tone="alert" pulse className="h-1.5 w-1.5" /> Active
-                </Pill>
+                <Pill tone="alert">Active</Pill>
                 <span className="tabular text-xs text-muted-foreground">
                   {primary.metric.label} {primary.metric.value}
                   {primary.metric.unit}
@@ -99,16 +92,9 @@ export default function DashboardPage() {
           <div className="divide-y divide-border/40">
             {connectors.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                <div className="flex items-center gap-2.5">
-                  <StatusDot
-                    tone={c.status === "armed" ? "signal" : "ok"}
-                    pulse={c.status === "streaming"}
-                    className="h-1.5 w-1.5"
-                  />
-                  <div>
-                    <div className="text-xs font-medium text-foreground">{c.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{c.role}</div>
-                  </div>
+                <div>
+                  <div className="text-xs font-medium text-foreground">{c.name}</div>
+                  <div className="text-[11px] text-muted-foreground">{c.role}</div>
                 </div>
                 <SourceChip source={c.accent} />
               </div>

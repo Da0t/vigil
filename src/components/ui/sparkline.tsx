@@ -44,7 +44,6 @@ export function Sparkline({
 
   const stroke =
     tone === "ok" ? "hsl(var(--lg-ok))" : "hsl(var(--primary))";
-  const glow = tone === "ok" ? "hsl(var(--lg-ok))" : "hsl(var(--lg-glow-1))";
 
   const hx = x(n - 1);
   const hy = y(data[n - 1]);
@@ -94,7 +93,6 @@ export function Sparkline({
         strokeLinejoin="round"
         strokeLinecap="round"
         filter={`url(#glow-${id})`}
-        style={{ color: glow }}
       />
 
       {showHead && (

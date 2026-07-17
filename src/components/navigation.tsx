@@ -15,7 +15,6 @@ import {
   ScanEye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { StatusDot } from "@/components/ui/status-dot";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -45,11 +44,11 @@ function Wordmark() {
 
 function AgentPill() {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-secondary/40 px-3 py-2">
-      <StatusDot tone="signal" pulse />
+    <div className="flex items-center gap-2.5 rounded-lg border border-border bg-secondary/40 px-3 py-2">
+      <span className="h-6 w-[3px] rounded-full bg-[hsl(var(--primary))]" />
       <div className="flex flex-col leading-none">
-        <span className="text-xs font-medium text-foreground">Agent</span>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs font-medium text-foreground">Agent active</span>
+        <span className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
           watching
         </span>
       </div>
@@ -116,30 +115,29 @@ export function Navigation() {
   return (
     <>
       {/* Desktop rail */}
-      <aside className="sticky top-0 z-30 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r border-border/60 bg-background/40 px-4 py-6 backdrop-blur-xl lg:flex">
+      <aside className="sticky top-0 z-30 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r border-border bg-background px-4 py-6 lg:flex">
         <Wordmark />
         <AgentPill />
         <nav className="flex flex-1 flex-col gap-1">
           <NavItems pathname={pathname} />
         </nav>
-        <div className="flex items-center justify-between border-t border-border/50 pt-4">
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <StatusDot tone="ok" className="h-1.5 w-1.5" />
-            <span>0 standing credentials</span>
-          </div>
+        <div className="flex items-center justify-between border-t border-border/60 pt-4">
+          <span className="text-[11px] text-muted-foreground">
+            0 standing credentials
+          </span>
           <ThemeToggle />
         </div>
       </aside>
 
       {/* Mobile top bar */}
-      <div className="sticky top-0 z-30 flex w-full items-center justify-between border-b border-border/60 bg-background/70 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="sticky top-0 z-30 flex w-full items-center justify-between border-b border-border bg-background px-4 py-3 lg:hidden">
         <Wordmark />
         <div className="flex items-center gap-2">
           <AgentPill />
           <ThemeToggle />
         </div>
       </div>
-      <nav className="sticky top-[65px] z-20 flex w-full items-center gap-1 overflow-x-auto border-b border-border/50 bg-background/50 px-3 py-2 backdrop-blur-xl lg:hidden">
+      <nav className="sticky top-[65px] z-20 flex w-full items-center gap-1 overflow-x-auto border-b border-border bg-background px-3 py-2 lg:hidden">
         <NavItems pathname={pathname} />
       </nav>
     </>

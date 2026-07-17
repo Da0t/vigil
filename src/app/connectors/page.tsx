@@ -2,7 +2,6 @@ import { Check, Radio, Lock } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { GlassCard } from "@/components/ui/card";
 import { Pill, SourceChip } from "@/components/ui/chip";
-import { StatusDot } from "@/components/ui/status-dot";
 import { connectors } from "@/lib/mock-data";
 import type { Connector } from "@/lib/types";
 
@@ -43,11 +42,8 @@ export default function ConnectorsPage() {
                 {c.detail}
               </p>
 
-              <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3">
-                <div className="flex items-center gap-2">
-                  <StatusDot tone={meta.tone} pulse={c.status === "streaming"} className="h-1.5 w-1.5" />
-                  <span className="text-[11px] text-foreground">{meta.label}</span>
-                </div>
+              <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
+                <span className="text-[11px] text-foreground">{meta.label}</span>
                 <Icon className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </GlassCard>

@@ -3,7 +3,6 @@
 import { ArrowDownRight, ArrowUpRight, Activity } from "lucide-react";
 import { GlassCard } from "@/components/ui/card";
 import { SeverityChip, Pill } from "@/components/ui/chip";
-import { StatusDot } from "@/components/ui/status-dot";
 import { Sparkline } from "@/components/ui/sparkline";
 import { cn } from "@/lib/utils";
 import type { Incident, IncidentStatus } from "@/lib/types";
@@ -47,10 +46,7 @@ export function TelemetryPanel({
           </div>
           <div className="flex items-center gap-2">
             <SeverityChip severity={incident.severity} />
-            <Pill tone={STATUS_TONE[status]}>
-              <StatusDot tone={STATUS_TONE[status]} pulse={!resolved} className="h-1.5 w-1.5" />
-              {STATUS_LABEL[status]}
-            </Pill>
+            <Pill tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Pill>
           </div>
         </div>
 
@@ -67,6 +63,11 @@ export function TelemetryPanel({
                   "tabular text-4xl font-semibold tracking-tight",
                   resolved ? "text-ok" : "text-[hsl(var(--primary))]"
                 )}
+                style={
+                  resolved
+                    ? undefined
+                    : { textShadow: "0 0 26px hsl(var(--primary) / 0.4)" }
+                }
               >
                 {errorRate.toFixed(errorRate < 1 ? 2 : 1)}
               </span>
@@ -88,12 +89,9 @@ export function TelemetryPanel({
           </div>
           <div className="hidden text-right sm:block">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              feed
+              source
             </div>
-            <div className="mt-1 flex items-center justify-end gap-1.5 text-xs text-foreground">
-              <StatusDot tone="signal" pulse className="h-1.5 w-1.5" />
-              live · Nexla stream
-            </div>
+            <div className="mt-1 text-xs text-foreground">Nexla stream</div>
           </div>
         </div>
 

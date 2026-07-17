@@ -23,11 +23,10 @@ export function SourceChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border border-border/70 bg-secondary/50 px-2 py-0.5 text-[11px] font-medium tracking-wide text-muted-foreground",
+        "inline-flex items-center rounded border border-border bg-secondary/50 px-1.5 py-0.5 text-[11px] font-medium tracking-wide text-muted-foreground",
         className
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" />
       {SOURCE_LABELS[source]}
     </span>
   );
@@ -46,19 +45,13 @@ export function SeverityChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-wider tabular",
+        "inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold tracking-wider tabular",
         hot
           ? "bg-destructive/15 text-[hsl(var(--destructive))] ring-1 ring-destructive/40"
           : "bg-primary/12 text-[hsl(var(--primary))] ring-1 ring-primary/35",
         className
       )}
     >
-      <span
-        className={cn(
-          "h-1.5 w-1.5 rounded-full",
-          hot ? "bg-[hsl(var(--destructive))]" : "bg-[hsl(var(--primary))]"
-        )}
-      />
       {severity}
     </span>
   );
@@ -85,7 +78,7 @@ export function Pill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium tracking-wide",
+        "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[11px] font-medium tracking-wide",
         tones[tone],
         className
       )}

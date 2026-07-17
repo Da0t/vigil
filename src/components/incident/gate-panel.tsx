@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/card";
 import { SourceChip, Pill } from "@/components/ui/chip";
-import { StatusDot } from "@/components/ui/status-dot";
 import { Meter } from "@/components/ui/meter";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,9 +25,7 @@ function VerdictHeader({ state }: { state: SimState }) {
           <ShieldCheck className="h-5 w-5 text-ok" />
         </span>
         <div>
-          <div className="flex items-center gap-2 text-base font-semibold text-ok">
-            <StatusDot tone="ok" className="h-1.5 w-1.5" /> Allowed
-          </div>
+          <div className="text-base font-semibold text-ok">Allowed</div>
           <div className="text-xs text-muted-foreground">scoped · single-use · time-boxed</div>
         </div>
       </div>
@@ -41,9 +38,7 @@ function VerdictHeader({ state }: { state: SimState }) {
           <ShieldX className="h-5 w-5 text-alert" />
         </span>
         <div>
-          <div className="flex items-center gap-2 text-base font-semibold text-alert">
-            <StatusDot tone="alert" pulse className="h-1.5 w-1.5" /> Denied
-          </div>
+          <div className="text-base font-semibold text-alert">Denied</div>
           <div className="text-xs text-muted-foreground">escalation refused · policy tightened</div>
         </div>
       </div>
@@ -56,9 +51,7 @@ function VerdictHeader({ state }: { state: SimState }) {
           <ShieldQuestion className="h-5 w-5 text-[hsl(var(--primary))]" />
         </span>
         <div>
-          <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <StatusDot tone="signal" pulse className="h-1.5 w-1.5" /> Evaluating
-          </div>
+          <div className="text-base font-semibold text-foreground">Evaluating</div>
           <div className="text-xs text-muted-foreground">policy querying live loop state</div>
         </div>
       </div>

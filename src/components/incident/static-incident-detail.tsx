@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowLeft, ShieldCheck, ShieldX, ScrollText } from "lucide-react";
 import { GlassCard } from "@/components/ui/card";
 import { SeverityChip, Pill, SourceChip } from "@/components/ui/chip";
-import { StatusDot } from "@/components/ui/status-dot";
 import { Sparkline } from "@/components/ui/sparkline";
 import type { Incident } from "@/lib/types";
 
@@ -30,7 +29,6 @@ export function StaticIncidentDetail({ incident }: { incident: Incident }) {
           <div className="flex items-center gap-2">
             <SeverityChip severity={incident.severity} />
             <Pill tone={resolved ? "ok" : "signal"}>
-              <StatusDot tone={resolved ? "ok" : "signal"} pulse={!resolved} className="h-1.5 w-1.5" />
               {resolved ? "Resolved" : "Resolving"}
             </Pill>
           </div>
@@ -54,7 +52,7 @@ export function StaticIncidentDetail({ incident }: { incident: Incident }) {
             series={incident.metric.series}
             height={96}
             tone={resolved ? "ok" : "signal"}
-            showHead={!resolved}
+            showHead={false}
           />
         </div>
       </GlassCard>

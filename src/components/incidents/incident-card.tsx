@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { GlassCard } from "@/components/ui/card";
 import { SeverityChip, Pill } from "@/components/ui/chip";
-import { StatusDot } from "@/components/ui/status-dot";
 import { Sparkline } from "@/components/ui/sparkline";
 import type { Incident, IncidentStatus } from "@/lib/types";
 
@@ -17,7 +16,6 @@ const STATUS: Record<
 
 export function IncidentCard({ incident }: { incident: Incident }) {
   const s = STATUS[incident.status];
-  const live = incident.status !== "resolved";
   return (
     <Link href={`/incidents/${incident.id}`} className="group block">
       <GlassCard
@@ -26,12 +24,9 @@ export function IncidentCard({ incident }: { incident: Incident }) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <StatusDot tone={s.tone} pulse={live} />
-              <h3 className="truncate text-sm font-semibold tracking-tight">
-                {incident.title}
-              </h3>
-            </div>
+            <h3 className="truncate text-sm font-semibold tracking-tight">
+              {incident.title}
+            </h3>
             <p className="tabular mt-1 font-mono text-[11px] text-muted-foreground">
               {incident.service} · {incident.startedAt}
               {incident.deploy ? ` · ${incident.deploy}` : ""}
@@ -45,7 +40,7 @@ export function IncidentCard({ incident }: { incident: Incident }) {
             series={incident.metric.series}
             height={44}
             tone={incident.status === "resolved" ? "ok" : "signal"}
-            showHead={live}
+            showHead={false}
           />
         </div>
 
