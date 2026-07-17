@@ -1,0 +1,31 @@
+---
+version: "2.0"
+services:
+  worker:
+    image: <dockerhub-user>/vigil-diagnostic-worker:latest
+    expose:
+      - port: 4400
+        as: 80
+        to:
+          - global: true
+profiles:
+  compute:
+    worker:
+      resources:
+        cpu:
+          units: 0.5
+        memory:
+          size: 512Mi
+        storage:
+          size: 512Mi
+  placement:
+    akash:
+      pricing:
+        worker:
+          denom: uakt
+          amount: 10000
+deployment:
+  worker:
+    akash:
+      profile: worker
+      count: 1
