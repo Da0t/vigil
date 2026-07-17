@@ -4,7 +4,16 @@
   "private": true,
   "type": "module",
   "description": "Shared env + auth helpers imported by Vigil backend services",
+  "scripts": {
+    "test": "tsx --test ./*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
     "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsx": "^4.23.1",
+    "typescript": "^5.9.3"
   }
 }
