@@ -8,6 +8,5 @@ services/diagnostic-worker/node_modules
 npm-debug.log*
 .env*
 !.env.example
-next-env.d.ts
 /coverage
 *.tsbuildinfo
