@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "description": "Shared env + auth helpers imported by Vigil backend services",
+  "author": "Pranav Sagar",
+  "license": "MIT",
   "scripts": {
     "test": "tsx --test ./*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"

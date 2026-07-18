@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "Vigil gate service — policy engine + single-use scoped grants (port 4200)",
+  "author": "Pranav Sagar",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "tsx --test src/*.test.ts",

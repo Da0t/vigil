@@ -134,3 +134,7 @@ threat model, and known limitations, and `.env.example` for every variable
 - `shared/` — cross-service fixtures (e.g. the `.vlog` log samples).
 - `scripts/` — `dev-all.sh`, the one-command demo launcher.
 - `docs/` — plans, the demo script, and sponsor receipts.
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

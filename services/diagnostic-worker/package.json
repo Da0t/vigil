@@ -1,14 +1,14 @@
 {
   "name": "diagnostic-worker",
   "version": "1.0.0",
-  "description": "",
+  "description": "Vigil diagnostic worker for sandbox incident evidence.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Pranav Sagar",
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.6",

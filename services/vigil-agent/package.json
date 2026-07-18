@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "description": "Vigil autonomous remediation orchestrator — detect, diagnose, gate, rollback",
+  "author": "Pranav Sagar",
+  "license": "MIT",
   "scripts": {
     "start": "tsx src/server.ts",
     "dev": "tsx watch src/server.ts",

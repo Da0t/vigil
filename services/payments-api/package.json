@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "description": "Vigil mock prod service — a payments API that really breaks",
+  "author": "Pranav Sagar",
+  "license": "MIT",
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts"
