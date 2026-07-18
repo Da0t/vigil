@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings=0",
     "test:e2e": "playwright test",
     "test:services": "for s in shared gate vigil-agent; do (cd services/$s && npm test) || exit 1; done"
   },
