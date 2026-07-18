@@ -117,3 +117,34 @@ done
 _Person D: copy the "layered" diagram + the honesty note ("route restriction is
 real; grant single-use is real; Pomerium auth is permissive for the demo") into
 the main README honesty table._
+
+## Production profile (`config.prod.yaml`)
+
+`config.yaml` is the **dev** profile (plain HTTP, public access). Production uses
+`config.prod.yaml`, which changes three things:
+
+| Concern | dev (`config.yaml`) | prod (`config.prod.yaml`) |
+|---|---|---|
+| Transport | `insecure_server: true` (plain HTTP) | HTTPS only — grant tokens never travel cleartext |
+| Caller auth | `allow_public_unauthenticated_access` | `authenticated_user: true` — anonymous denied at the proxy |
+| Routes | `/rollback`, `/restart` only | same (everything else 404s) |
+
+Secrets/certs are injected at runtime via env (`SHARED_SECRET`, `COOKIE_SECRET`,
+`SIGNING_KEY`, `AUTOCERT` or `CERTIFICATE`/`CERTIFICATE_KEY`, IdP creds) and are
+never committed. This is the "document a service-mesh/ingress assumption" option
+from the plan: a full prod Pomerium needs an IdP + certificate provisioning that
+this repo does not stand up, so `config.prod.yaml` is a ready-to-fill template.
+
+### Network isolation (Phase 1 #8)
+
+In prod, payments-api's destructive routes must be reachable **only through
+Pomerium**, never directly from the host:
+
+- **Code path:** the agent's `applyRemediation` uses `POMERIUM_URL ?? PAYMENTS_URL`.
+  `POMERIUM_URL` is `requiredInProd`, so in production the agent always routes
+  through Pomerium; the direct-to-payments fallback is structurally dev-only.
+- **Network path:** the prod compose/orchestration does **not** publish
+  payments-api's `:4100` to the host — only Pomerium's `:443` is exposed, and
+  payments-api is reachable solely on the internal network (see the prod compose
+  notes / `docker-compose.prod.yml` from Phase 3). Even a leaked grant token
+  cannot be replayed from outside the mesh.

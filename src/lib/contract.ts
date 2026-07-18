@@ -81,7 +81,15 @@ export interface GrantRequest {
   sandboxPassed: boolean;
   budgetUsed: number;
   consecutiveFailures: number;
-  requestedBy: string; // "vigil-agent"
+  requestedBy: string; // "vigil-agent" — in prod the gate ignores this and uses
+  // the authenticated caller identity from the request signature.
+  /** Deploy under diagnosis; binds the sandbox attestation to a specific incident. */
+  deployId?: string;
+  /**
+   * Worker-signed proof that the sandbox actually passed for {service, deployId}.
+   * In prod the gate verifies this instead of trusting `sandboxPassed`.
+   */
+  attestation?: string;
 }
 
 export interface GrantResponse {
@@ -121,6 +129,12 @@ export interface DiagnoseResponse {
   rootCause: string;
   recommendedAction: string;
   checks: { name: string; passed: boolean; detail?: string }[];
+  /**
+   * Worker-signed attestation over {service, deployId, sandboxPassed}, present
+   * when the worker holds a signing secret. The agent forwards it to the gate,
+   * which verifies it — so a destructive grant never rests on an unsigned boolean.
+   */
+  attestation?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -155,5 +169,6 @@ export const ENV = {
   workerUrl: "WORKER_URL", // orchestrator → Akash worker
   zeroMode: "ZERO_MODE", // "live" | "fallback"
   zeroApiKey: "ZERO_API_KEY",
-  anthropicKey: "ANTHROPIC_API_KEY", // optional LLM hypothesis step
+  openaiKey: "OPENAI_API_KEY", // optional LLM hypothesis step (services/vigil-agent/src/hypothesis.ts)
+  openaiModel: "OPENAI_MODEL", // defaults to gpt-4o-mini
 } as const;

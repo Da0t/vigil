@@ -1,0 +1,65 @@
+# Vigil — PRODUCTION overrides. Layer on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+#
+# Turns on the hardened path: VIGIL_ENV=production (fail closed), a shared Redis
+# grant store, service-to-service auth + sandbox attestation, and network
+# isolation (payments-api is NOT published to the host — only Pomerium reaches
+# its destructive routes). Secrets come from the HOST environment and are never
+# committed:
+#   export VIGIL_INTERNAL_SECRET=... WORKER_ATTEST_SECRET=...   (>=16 chars each)
+# Generate with: openssl rand -hex 24
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  gate:
+    environment:
+      VIGIL_ENV: "production"
+      REDIS_URL: "redis://redis:6379"
+      VIGIL_INTERNAL_SECRET: "${VIGIL_INTERNAL_SECRET:?set VIGIL_INTERNAL_SECRET}"
+      WORKER_ATTEST_SECRET: "${WORKER_ATTEST_SECRET:?set WORKER_ATTEST_SECRET}"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  payments-api:
+    environment:
+      VIGIL_ENV: "production"
+      GATE_URL: "http://gate:4200"
+      VIGIL_INTERNAL_SECRET: "${VIGIL_INTERNAL_SECRET:?set VIGIL_INTERNAL_SECRET}"
+    # Network isolation: do NOT publish :4100 to the host in prod. The destructive
+    # routes are reachable only through Pomerium on the internal network.
+    ports: []
+
+  worker:
+    environment:
+      VIGIL_ENV: "production"
+      VIGIL_INTERNAL_SECRET: "${VIGIL_INTERNAL_SECRET:?set VIGIL_INTERNAL_SECRET}"
+      WORKER_ATTEST_SECRET: "${WORKER_ATTEST_SECRET:?set WORKER_ATTEST_SECRET}"
+
+  vigil-agent:
+    environment:
+      VIGIL_ENV: "production"
+      PAYMENTS_URL: "http://payments-api:4100"
+      GATE_URL: "http://gate:4200"
+      WORKER_URL: "http://worker:4400"
+      POMERIUM_URL: "http://pomerium:4300"
+      ZERO_MODE: "${ZERO_MODE:-fallback}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      # The agent signs internal calls but NEVER holds WORKER_ATTEST_SECRET.
+      VIGIL_INTERNAL_SECRET: "${VIGIL_INTERNAL_SECRET:?set VIGIL_INTERNAL_SECRET}"
+
+  pomerium:
+    volumes:
+      - ./pomerium/config.prod.yaml:/pomerium/config.yaml:ro

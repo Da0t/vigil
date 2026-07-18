@@ -20,15 +20,17 @@ export function SimControls({
   state,
   onToggle,
   onRestart,
+  disabled = false,
 }: {
   state: SimState;
   onToggle: () => void;
   onRestart: () => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={onToggle} className="min-w-[104px]">
+        <Button size="sm" onClick={onToggle} disabled={disabled} className="min-w-[104px]">
           {state.playing ? (
             <>
               <Pause className="h-3.5 w-3.5" /> Pause
@@ -40,7 +42,7 @@ export function SimControls({
             </>
           )}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onRestart} aria-label="restart">
+        <Button size="sm" variant="ghost" onClick={onRestart} disabled={disabled} aria-label="restart">
           <RotateCcw className="h-3.5 w-3.5" />
         </Button>
       </div>

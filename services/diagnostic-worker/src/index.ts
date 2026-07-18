@@ -1,16 +1,36 @@
 import express from "express";
 import cors from "cors";
-import { VLOG_LINE, type DiagnoseRequest, type DiagnoseResponse } from "./contract-lite";
+import { z } from "zod";
+import { VLOG_LINE, type DiagnoseResponse } from "./contract-lite";
+import { AUTH_ENABLED, ATTEST_ENABLED, env, logWorkerConfig } from "./env";
+import { captureRawBody, requireInternalAuth, signAttestation } from "./auth-lite";
 
-const PORT = Number(process.env.PORT ?? 4400);
+const diagnoseSchema = z.object({
+  service: z.string().min(1),
+  deployId: z.string().min(1),
+  candidateAction: z.string().min(1),
+  rawLogs: z.string(),
+});
+
+const PORT = env.PORT;
+const requireAuth = requireInternalAuth({ secret: env.VIGIL_INTERNAL_SECRET, enabled: AUTH_ENABLED });
+
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "2mb", verify: captureRawBody }));
 
 app.get("/health", (_req, res) => { res.json({ ok: true, role: "vigil-diagnostic-worker" }); });
 
-app.post("/diagnose", (req, res) => {
-  const { service, deployId, candidateAction, rawLogs } = req.body as DiagnoseRequest;
+app.post("/diagnose", requireAuth, (req, res) => {
+  const parsed = diagnoseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      error: "invalid request body",
+      issues: parsed.error.issues.map((i) => ({ path: i.path.join(".") || "(root)", message: i.message })),
+    });
+    return;
+  }
+  const { service, deployId, candidateAction, rawLogs } = parsed.data;
 
   const errors: { component: string; code: string; rest: string }[] = [];
   let sawDeployMarker = false;
@@ -40,6 +60,13 @@ app.post("/diagnose", (req, res) => {
   ];
   const passed = checks.every((c) => c.passed);
 
+  // Sign the result so the gate can trust `sandboxPassed` without trusting the
+  // agent. Only the worker holds WORKER_ATTEST_SECRET.
+  const attestation =
+    ATTEST_ENABLED && env.WORKER_ATTEST_SECRET
+      ? signAttestation(env.WORKER_ATTEST_SECRET, service, deployId, passed)
+      : undefined;
+
   const response: DiagnoseResponse = {
     sandboxPassed: passed,
     rootCause: passed
@@ -47,9 +74,29 @@ app.post("/diagnose", (req, res) => {
       : "evidence inconclusive — human review required",
     recommendedAction: passed ? candidateAction : "escalate",
     checks,
+    attestation,
   };
-  console.log(`[worker] diagnose ${service}/${deployId}: sandbox_passed=${passed}`);
+  // Emit a structured line carrying the correlation ID so one incident is
+  // traceable across the agent → worker hop (worker is an isolated build context
+  // and cannot import the shared pino logger).
+  const cid = req.headers["x-vigil-correlation-id"];
+  console.log(JSON.stringify({
+    service: "diagnostic-worker",
+    correlationId: Array.isArray(cid) ? cid[0] : cid,
+    msg: "diagnose",
+    subject: `${service}/${deployId}`,
+    sandboxPassed: passed,
+    attested: !!attestation,
+  }));
   res.json(response);
 });
 
-app.listen(PORT, () => console.log(`[diagnostic-worker] :${PORT}`));
+// Global safety nets + graceful shutdown (inline — isolated build context).
+process.on("unhandledRejection", (r) => console.error("[diagnostic-worker] unhandledRejection:", r));
+process.on("uncaughtException", (e) => { console.error("[diagnostic-worker] uncaughtException:", e); process.exit(1); });
+
+const server = app.listen(PORT, () => { logWorkerConfig(); console.log(`[diagnostic-worker] :${PORT}`); });
+
+for (const sig of ["SIGTERM", "SIGINT"] as const) {
+  process.on(sig, () => { console.log(`[diagnostic-worker] ${sig} received`); server.close(() => process.exit(0)); });
+}

@@ -12,6 +12,7 @@ const STATUS: Record<
   active: { tone: "alert", label: "Active" },
   resolving: { tone: "signal", label: "Resolving" },
   resolved: { tone: "ok", label: "Resolved" },
+  failed: { tone: "alert", label: "Not resolved" },
 };
 
 export function IncidentCard({ incident }: { incident: Incident }) {

@@ -1,0 +1,47 @@
+# Pomerium — PRODUCTION profile for Vigil.
+#
+# The TLS-terminated choke point in front of payments-api's two destructive
+# routes. Differs from config.yaml (dev) in three security-relevant ways:
+#
+#   1. NO `insecure_server: true` — Pomerium serves HTTPS only, so grant tokens
+#      never travel in cleartext (config.yaml's plain HTTP is dev-only).
+#   2. NO `allow_public_unauthenticated_access` — every call must carry a
+#      verifiable identity; anonymous callers are denied at the proxy.
+#   3. Still only `/rollback` and `/restart` are routed; every other prod path
+#      (`/logs`, `/metrics`, `/deploys`, `/admin/*`, …) has no route ⇒ 404.
+#
+# Secrets and certificates are injected via environment / mounted files at
+# runtime and MUST NOT be committed:
+#   SHARED_SECRET, COOKIE_SECRET, SIGNING_KEY   (base64; `pomerium gen-secret`)
+#   AUTOCERT=true  (ACME)   or   CERTIFICATE / CERTIFICATE_KEY (mounted PEM)
+#   IDP_PROVIDER / IDP_CLIENT_ID / IDP_CLIENT_SECRET (your SSO / service IdP)
+#
+# Grant enforcement remains defense-in-depth: payments-api re-verifies the
+# single-use, scoped, 60s grant with the gate on every call, independent of
+# Pomerium. Pomerium adds TLS + identity + route restriction on top.
+
+# HTTPS listener. TLS material comes from AUTOCERT or CERTIFICATE(_KEY) env.
+address: ":443"
+authenticate_service_url: "https://authenticate.${VIGIL_DOMAIN}"
+
+# Only the two destructive actions are reachable. Each requires an authenticated
+# caller (no public access) and forwards identity headers to payments-api, which
+# still performs the single-use grant check.
+routes:
+  - from: "https://payments.${VIGIL_DOMAIN}"
+    to: "http://payments-api:4100"
+    prefix: /rollback
+    pass_identity_headers: true
+    policy:
+      - allow:
+          and:
+            - authenticated_user: true
+
+  - from: "https://payments.${VIGIL_DOMAIN}"
+    to: "http://payments-api:4100"
+    prefix: /restart
+    pass_identity_headers: true
+    policy:
+      - allow:
+          and:
+            - authenticated_user: true

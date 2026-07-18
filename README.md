@@ -58,7 +58,7 @@ service.
 | **Zero.xyz** | Per-call log-parse capability the agent buys just-in-time (beat 4). It never holds a standing parser — it pays per use. | `docs/zero-receipts.md` |
 | **Akash** | Hosts the diagnostic worker that reproduces the failure in a disposable sandbox (beat 5), deployed live. | deployed URL + proof in `services/diagnostic-worker/AKASH.md` |
 | **Pomerium** | The *only* path to destructive routes (`/rollback`, `/restart`). Rollback (beat 6–7) and the denied mass-restart (beat 8) really transit it. | `pomerium/` (config + policy) |
-| **OpenAI** | Optional LLM hypothesis step — writes the one-sentence root-cause hypothesis (`gpt-4o-mini`) when `OPENAI_API_KEY` is set; the loop runs identically without it. | env `OPENAI_API_KEY` |
+| **OpenAI** | Optional LLM hypothesis step — writes a one-sentence root-cause hypothesis (`gpt-4o-mini`) when `OPENAI_API_KEY` is set; deterministic fallback otherwise. | env `OPENAI_API_KEY` (`services/vigil-agent/src/hypothesis.ts`) |
 
 ## What's real vs simulated
 
@@ -84,6 +84,44 @@ cp .env.example .env      # unset vars fall back to local mimics; demo still wor
 - Press **Play** and watch the loop run. The chip by the controls reads
   **`LIVE · real services`** when the orchestrator is up, **`SIM · scripted`**
   when it isn't — the same UI drives both.
+
+## Production
+
+Vigil follows one rule everywhere: **fail closed in prod, fail convenient in
+dev**, gated on `VIGIL_ENV` (falls back to `NODE_ENV`).
+
+- **Dev** (`VIGIL_ENV` unset/`development`): unset vars fall back to local
+  defaults, service auth + attestation are disabled, the grant store is
+  in-memory — the demo runs with **zero secrets**.
+- **Prod** (`VIGIL_ENV=production`): every service validates its required env at
+  boot and refuses to start if a secret is missing (fail fast). Then:
+  - **Service-to-service auth** — every internal call is HMAC-signed (identity +
+    timestamp + body integrity); unauthenticated callers are rejected.
+  - **Verified evidence** — the gate derives `requestedBy` from the authenticated
+    caller and only accepts `sandboxPassed` when a **worker-signed attestation**
+    backs it (the agent never holds the attest secret, so it can't forge proof).
+  - **Single-use grants** — 60s TTL, scoped to one action+service, redacted in
+    listings, enforced atomically in a shared **Redis** store so they hold across
+    replicas and survive restarts.
+  - **Network isolation + TLS** — destructive routes are reachable only through
+    Pomerium (`config.prod.yaml`, HTTPS + a real policy); payments-api isn't
+    published to the host.
+  - **Observability** — structured pino logs with a correlation ID across the
+    call chain, Prometheus `/metrics`, env-gated Sentry + OpenTelemetry.
+
+Run the composed stacks:
+
+```bash
+docker compose up --build                                   # dev stack (no secrets)
+
+export VIGIL_INTERNAL_SECRET=$(openssl rand -hex 24)
+export WORKER_ATTEST_SECRET=$(openssl rand -hex 24)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build   # hardened prod stack
+```
+
+See **[PRODUCTION.md](PRODUCTION.md)** for the full change log, env matrix,
+threat model, and known limitations, and `.env.example` for every variable
+(grouped, with the prod-required ones marked).
 
 ## Repo tour
 

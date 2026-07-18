@@ -1,7 +1,16 @@
+# Never ship deps, build output, VCS, or secrets into any image.
+**/node_modules
 node_modules
+**/.next
 .next
+**/dist
+**/coverage
 .git
+.github
 npm-debug.log*
+**/*.tsbuildinfo
+.DS_Store
+# Secrets: exclude every .env variant, but keep the committed example.
 .env
 .env.*
 !.env.example

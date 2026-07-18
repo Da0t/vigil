@@ -1,7 +1,7 @@
 export type Severity = "SEV-1" | "SEV-2" | "SEV-3";
 export type SourceTag = "zero" | "akash" | "pomerium" | "agent";
 
-export type IncidentStatus = "active" | "resolving" | "resolved";
+export type IncidentStatus = "active" | "resolving" | "resolved" | "failed";
 export type StepState = "done" | "active" | "pending" | "failed";
 export type SandboxLifecycle =
   | "provisioning"

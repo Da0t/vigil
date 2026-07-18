@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, integration, production-hardening]
+  pull_request:
+
+jobs:
+  lint-typecheck-test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 3s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install root (web) deps
+        run: npm ci
+      - name: Lint (Next app)
+        run: npm run lint
+      - name: Typecheck (frontend)
+        run: npx tsc --noEmit
+
+      - name: Install service deps
+        run: |
+          for s in shared gate payments-api vigil-agent diagnostic-worker; do
+            echo "== npm ci $s =="; (cd "services/$s" && npm ci)
+          done
+
+      - name: Typecheck services
+        run: |
+          for s in shared gate payments-api vigil-agent diagnostic-worker; do
+            echo "== tsc $s =="; (cd "services/$s" && npx tsc --noEmit -p tsconfig.json)
+          done
+
+      - name: Unit + integration tests (security core)
+        env:
+          REDIS_URL: redis://localhost:6379
+        run: |
+          (cd services/shared && npm test)
+          (cd services/gate && npm test)
+          (cd services/vigil-agent && npx tsx --test 'src/**/*.test.ts')
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build all images (compose)
+        run: docker compose build

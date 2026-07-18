@@ -1,65 +1,133 @@
-# Vigil — full-stack demo composition.
+# Vigil — full-stack demo composition (DEV profile).
 #
-# STATUS: authored on person-d-frontend; **VERIFIED POST-MERGE**. Only the web
-# service (build context ".", root Dockerfile) exists on this branch. The
-# backend build contexts — services/payments-api, services/gate,
-# services/vigil-agent — and their Dockerfiles land with Persons A/B/C at merge
-# time; mirror the diagnostic-worker's Dockerfile (services/diagnostic-worker/).
-# `docker compose up` is a merge-time smoke test, NOT a person-d deliverable, so
-# it is not runnable until those contexts exist.
+# `docker compose up --build` brings up the whole system in development mode
+# (VIGIL_ENV=development): in-memory grant store, service auth disabled, local
+# fallbacks — so the demo runs with zero secrets. For a hardened prod-mode stack
+# (Redis, service auth, attestation, TLS) use the override:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 #
-# Ports are the single source of truth from src/lib/contract.ts (PORTS):
+# Ports (single source of truth = src/lib/contract.ts PORTS):
 #   web 3000 · agent 4000 · payments 4100 · gate 4200 · pomerium 4300 · worker 4400
 #
-# NOTE: NEXT_PUBLIC_AGENT_URL is inlined into the client bundle at BUILD time
-# (Next.js NEXT_PUBLIC_ contract), hence it is a build arg, not a runtime env.
-# The browser (not the container) opens the SSE stream, so it targets the
-# host-published http://localhost:4000.
+# The backend services build from the REPO ROOT context (they share
+# services/shared + src/lib); the worker builds from its own isolated context.
+
+x-healthcheck-defaults: &hc
+  interval: 10s
+  timeout: 3s
+  retries: 5
+  start_period: 8s
 
 services:
   web:
     build:
       context: .
+      dockerfile: Dockerfile
       args:
+        # Inlined into the client bundle at build time; the browser opens the SSE
+        # stream against the host-published agent. Override for hosted deploys.
         NEXT_PUBLIC_AGENT_URL: "http://localhost:4000"
     ports:
       - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    deploy:
+      resources:
+        limits: { cpus: "0.75", memory: 512M }
     depends_on:
-      - vigil-agent
+      vigil-agent:
+        condition: service_healthy
 
   payments-api:
-    build: ./services/payments-api
+    build:
+      context: .
+      dockerfile: services/payments-api/Dockerfile
     ports:
       - "4100:4100"
     environment:
+      VIGIL_ENV: "development"
       GATE_URL: "http://gate:4200"
+    restart: unless-stopped
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4100/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+    depends_on:
+      gate:
+        condition: service_healthy
 
   gate:
-    build: ./services/gate
+    build:
+      context: .
+      dockerfile: services/gate/Dockerfile
     ports:
       - "4200:4200"
+    environment:
+      VIGIL_ENV: "development"
+    restart: unless-stopped
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4200/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  worker:
+    build:
+      context: ./services/diagnostic-worker
+    ports:
+      - "4400:4400"
+    environment:
+      VIGIL_ENV: "development"
+    restart: unless-stopped
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4400/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
 
   vigil-agent:
-    build: ./services/vigil-agent
+    build:
+      context: .
+      dockerfile: services/vigil-agent/Dockerfile
     ports:
       - "4000:4000"
     environment:
+      VIGIL_ENV: "development"
       PAYMENTS_URL: "http://payments-api:4100"
       GATE_URL: "http://gate:4200"
-      POMERIUM_URL: "http://pomerium:4300"
-      WORKER_URL: "${WORKER_URL:-}"
+      WORKER_URL: "http://worker:4400"
       ZERO_MODE: "${ZERO_MODE:-fallback}"
-      ZERO_API_KEY: "${ZERO_API_KEY:-}"
-      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+    restart: unless-stopped
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    deploy:
+      resources:
+        limits: { cpus: "0.75", memory: 512M }
     depends_on:
-      - payments-api
-      - gate
+      payments-api:
+        condition: service_healthy
+      gate:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
 
+  # Optional dev proxy. Prod uses config.prod.yaml (TLS + policy) — see
+  # docker-compose.prod.yml and pomerium/README.md.
   pomerium:
     image: pomerium/pomerium:latest
     ports:
       - "4300:4300"
     volumes:
       - ./pomerium/config.yaml:/pomerium/config.yaml:ro
+    restart: unless-stopped
     depends_on:
-      - payments-api
+      payments-api:
+        condition: service_healthy
