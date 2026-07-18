@@ -156,7 +156,8 @@ WORKER_URL=                          # Akash URL from Person C, or http://localh
 ZERO_MODE=fallback                   # "live" once Person C lands Zero
 ZERO_API_KEY=
 ZERO_API_URL=
-ANTHROPIC_API_KEY=                   # optional LLM hypothesis step
+OPENAI_API_KEY=                      # optional LLM hypothesis step
+OPENAI_MODEL=gpt-4o-mini             # override the hypothesis model if desired
 ```
 
 - [ ] **Step 2: `scripts/dev-all.sh`**:
@@ -228,8 +229,8 @@ sections, in order:
 4. **Sponsors, and precisely what each does** — table: Zero.xyz (per-call
    log-parse capability, receipts in `docs/zero-receipts.md`), Akash
    (diagnostic worker deployed at the URL in `services/diagnostic-worker/AKASH.md`),
-   Pomerium (only path to destructive routes, `pomerium/`), AWS/Anthropic
-   (hypothesis step, if landed).
+   Pomerium (only path to destructive routes, `pomerium/`), OpenAI
+   (hypothesis step, if enabled).
 5. **What's real vs simulated** — copy the honesty table from the master plan
    verbatim. Judges reward this.
 6. **Run it** — `cp .env.example .env`, `./scripts/dev-all.sh`, pomerium

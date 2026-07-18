@@ -704,33 +704,37 @@ curl -s -X POST localhost:4000/demo/reset
 
 ---
 
-### Task A5 (STRETCH — only if A1–A4 are done and pushed): Claude hypothesis
+### Task A5 (STRETCH — only if A1–A4 are done and pushed): OpenAI hypothesis
 
 **Files:** Create `services/vigil-agent/src/hypothesis.ts`; call it in the
 orchestrator right after `parseLogs`, adding an audit line with the model's
 one-sentence root-cause hypothesis.
 
-```bash
-cd services/vigil-agent && npm i @anthropic-ai/sdk
-```
-
 ```ts
-import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedLogs } from "../../../src/lib/contract";
 
+const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+
 export async function hypothesize(parsed: ParsedLogs, deployNote: string): Promise<string | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return null;
   try {
-    const client = new Anthropic();
-    const msg = await client.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 100,
-      messages: [{
-        role: "user",
-        content: `Incident evidence: error signature ${parsed.errorSignature} in ${parsed.suspectComponent}, started after deploy ${parsed.suspectDeploy} ("${deployNote}"). Sample: ${parsed.sampleLines[0] ?? ""}. In ONE sentence, state the most likely root cause and whether rollback is the right fix.`,
-      }],
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        max_tokens: 150,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: "You are an SRE assistant. Answer in exactly one concise sentence." },
+          { role: "user", content: `Incident evidence: error signature ${parsed.errorSignature} in ${parsed.suspectComponent}, started after deploy ${parsed.suspectDeploy} ("${deployNote}"). Sample: ${parsed.sampleLines[0] ?? ""}. In ONE sentence, state the most likely root cause and whether rollback is the right fix.` },
+        ],
+      }),
     });
-    return msg.content[0].type === "text" ? msg.content[0].text.trim() : null;
+    if (!r.ok) return null;
+    const data = (await r.json()) as { choices?: { message?: { content?: string } }[] };
+    return data.choices?.[0]?.message?.content?.trim() || null;
   } catch (e) {
     console.warn("[hypothesis] skipped:", (e as Error).message);
     return null;

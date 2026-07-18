@@ -30,8 +30,7 @@ EXECUTION:
 - The plan contains complete code for every file. Type it faithfully. Fix any obvious TS error and note it in the commit.
 - Use Node with tsx and Express. Node v25 is installed. Import contract types via relative path (../../../src/lib/contract).
 - For B4 (Pomerium): FIRST fetch the current Pomerium docs (pomerium.com/docs — routes + policy for Pomerium Core, docker quickstart) and correct the config.yaml in the plan to current syntax rather than trusting the snippet blindly. The goal: /rollback and /restart route through Pomerium (:4300 → payments-api :4100) and NOTHING else in prod is routable through it. If Pomerium policy syntax fights you for more than ~30 minutes, keep the layered model (Pomerium restricts routes; payments-api still verifies the single-use grant with your gate on every call), document exactly what you verified in pomerium/README.md, and move on — the grant enforcement is already real at the service.
-- After EACH task run its verification block and confirm the expected output literally appears. Commit after each task with the exact message the plan gives. End every commit message body with:
-  Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+- After EACH task run its verification block and confirm the expected output literally appears. Commit after each task with the exact message the plan gives.
 
 MANDATORY VERIFICATION (definition of done — do not claim completion until all pass):
 1. Unit tests: npx tsx src/policy.test.ts  AND  npx tsx src/grants.test.ts — every assertion passes.

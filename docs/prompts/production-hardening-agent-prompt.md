@@ -297,11 +297,10 @@ show automatic recovery.
 
 ## Phase 8 — Docs & consistency
 
-1. Reconcile the **LLM provider mismatch**: README, `docker-compose.yml`
-   (`ANTHROPIC_API_KEY`), and the orchestrator comment say Claude/`claude-sonnet-5`,
-   but the code (`services/vigil-agent/src/hypothesis.ts`) calls OpenAI
-   (`gpt-4o-mini`, `OPENAI_API_KEY`). Make code and docs agree (pick one
-   provider) and remove the dead env var.
+1. Reconcile the **LLM provider mismatch**: stale docs and compose env used to
+   name a different provider, but the code (`services/vigil-agent/src/hypothesis.ts`)
+   calls OpenAI (`gpt-4o-mini`, `OPENAI_API_KEY`). Make code and docs agree
+   and remove the dead env var.
 2. Update `README.md` to a production operations guide: real run instructions,
    the prod vs dev env matrix, the security model (auth, single-use grants,
    network isolation), and an honest "what's real vs simulated" section.

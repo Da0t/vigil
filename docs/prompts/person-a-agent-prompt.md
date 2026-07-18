@@ -21,8 +21,7 @@ EXECUTION:
 - The plan contains complete code for every file. Type it out faithfully. If a snippet has an obvious bug or a TypeScript error, fix it and note the fix in your commit message — do not silently diverge from the contract's type names.
 - Use Node with tsx (no build step) and Express, exactly as the plan specifies. Node v25 is installed. Services import contract types via relative path (e.g. ../../../src/lib/contract).
 - After EACH task, run its verification block from the plan and confirm the expected output literally appears. If it doesn't, debug and fix before moving on — do not proceed on a broken task.
-- Commit after each task with the exact commit message the plan gives. End every commit message body with:
-  Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+- Commit after each task with the exact commit message the plan gives.
 
 MANDATORY END-TO-END VERIFICATION (this is your definition of done — do not claim completion until this passes on a clean run):
 Run the Task A4 end-to-end sequence from the plan:
