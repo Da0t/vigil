@@ -5,18 +5,18 @@ import type { ParsedLogs } from "../../../../src/lib/contract";
 const run = promisify(execFile);
 
 /**
- * Live Zero.xyz log-parse capability — Vigil lacks the ability to turn its
+ * Live Zero.xyz log-parse capability - Vigil lacks the ability to turn its
  * cryptic .vlog lines into structured fields, so it *buys* that capability from
  * Zero on demand, paying per call in USDC over the x402 protocol.
  *
  * Zero's primary interface is its CLI (`@zeroxyz/cli`), which handles the 402
- * payment challenge and wallet signing for us — so instead of re-implementing
+ * payment challenge and wallet signing for us - so instead of re-implementing
  * x402 we shell out to `zero fetch`. The demo machine must be signed in once
  * (`zero auth login`); the $5 starter credit covers ~150 calls.
  *
  * Capability: "402.com.tr AI Field Extractor"
  * (402-com-tr-ai-field-extractor-a6518290,
- * https://402.com.tr/api/x402/ai-extract) — an LLM-backed extractor
+ * https://402.com.tr/api/x402/ai-extract) - an LLM-backed extractor
  * (Claude Haiku) that pulls named fields out of arbitrary text as JSON,
  * surfaced by `zero search "extract fields from text"`. It reliably parses
  * Vigil's bespoke format where a naive regex can't. Every value is
@@ -26,7 +26,7 @@ const run = promisify(execFile);
  * SAFETY CONTRACT (clients.ts#parseLogs catches any throw here and falls back
  * to the local regex parser, labelled parserSource:"fallback"):
  *   - throws on non-zero CLI exit, non-ok run, or missing extracted fields;
- *   - NEVER returns fabricated data with parserSource:"zero" — a "zero" result
+ *   - NEVER returns fabricated data with parserSource:"zero" - a "zero" result
  *     means Zero genuinely ran, was paid, and returned the fields we use.
  */
 const ZERO_BIN = process.env.ZERO_BIN ?? "zero";
@@ -72,7 +72,7 @@ export async function parseLogsLive(raw: string): Promise<ParsedLogs> {
   }
   const suspectDeploy = firstString(fields.suspectDeploy, fields.deploy);
 
-  // sampleLines are just the real error lines for display — cheap to take from
+  // sampleLines are just the real error lines for display - cheap to take from
   // raw; the diagnostic value (which component/code/deploy) came from Zero.
   const sampleLines = raw
     .split("\n")

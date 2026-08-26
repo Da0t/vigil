@@ -1,4 +1,4 @@
-# Akash deploy — Vigil diagnostic worker
+# Akash deploy - Vigil diagnostic worker
 
 STATUS: ✅ LIVE ON AKASH. Image da0t/vigil-diagnostic-worker:latest (clean
 single-arch linux/amd64, digest sha256:0d782ad5a668…a1e1c1) deployed to a lease
@@ -30,7 +30,7 @@ are left for the human-only checklist.
 
 ## 1. Build for amd64 and push to Docker Hub
 
-Macs are ARM; Akash providers are amd64 — the `--platform linux/amd64` flag is
+Macs are ARM; Akash providers are amd64 - the `--platform linux/amd64` flag is
 mandatory, not optional. Replace `<dockerhub-user>` with your Docker Hub
 username (this is a placeholder, not a real account).
 
@@ -87,11 +87,11 @@ curl -s -X POST "$WORKER_URL/diagnose" -H 'content-type: application/json' \
 
 ## 4. Record the deployed URL (receipts for judges / merge)
 
-Fill these in after the lease is live — the coordinator needs `WORKER_URL` at
+Fill these in after the lease is live - the coordinator needs `WORKER_URL` at
 merge time (`WORKER_URL=<deployed>` in the orchestrator env selects the real
 worker; unset falls back to the in-process heuristic):
 
-- **WORKER_URL:** `<fill after deploy — e.g. http://provider.example.com:32115>`
+- **WORKER_URL:** `<fill after deploy - e.g. http://provider.example.com:32115>`
 - **Lease ID:** `<fill: order/dseq from console>`
 - **Provider:** `<fill: provider address / host>`
 - **Image digest:** `<fill: docker buildx output or `docker inspect`>`

@@ -21,7 +21,7 @@ const LOST_AFTER_ATTEMPTS = 4;
 
 /**
  * Subscribes to the vigil-agent SSE stream. Each message is a full
- * LoopState snapshot — no event replay, no drift. When
+ * LoopState snapshot - no event replay, no drift. When
  * NEXT_PUBLIC_AGENT_URL is unset the hook stays "off" and the caller
  * falls back to the scripted sim.
  *
@@ -70,7 +70,7 @@ export function useIncidentLive() {
         try {
           setState(JSON.parse(e.data) as LoopState);
         } catch {
-          // Malformed snapshot — drop it, keep the last good state and the
+          // Malformed snapshot - drop it, keep the last good state and the
           // stream alive rather than crashing the loop or the app.
         }
       };
@@ -107,7 +107,7 @@ export function useIncidentLive() {
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       setControlError(null);
     } catch {
-      setControlError(`Couldn't ${action} — agent unreachable.`);
+      setControlError(`Couldn't ${action} - agent unreachable.`);
     }
   }, []);
 

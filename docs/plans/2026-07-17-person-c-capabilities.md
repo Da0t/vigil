@@ -1,20 +1,20 @@
-# Person C — Capabilities: Akash diagnostic worker + Zero.xyz (branch `person-c-capabilities`)
+# Person C - Capabilities: Akash diagnostic worker + Zero.xyz (branch `person-c-capabilities`)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans if
 > available; otherwise execute top-to-bottom, one todo per task. Commit after
 > every task. You own `services/diagnostic-worker/**` and EXACTLY ONE file in
 > vigil-agent: `services/vigil-agent/src/integrations/zero-live.ts`. Nothing
-> else — not clients.ts, not the orchestrator, not the frontend.
+> else - not clients.ts, not the orchestrator, not the frontend.
 
 **Goal:** The evidence generators. (1) A diagnostic worker container genuinely
 deployed on Akash that Vigil sends incident evidence to and gets back
 `sandbox_passed` + `recommended_action`. (2) A live Zero.xyz call that gives
 Vigil the log-parsing capability it lacks, with a per-call cost receipt.
 
-**Read first:** `src/lib/contract.ts` — `DiagnoseRequest/Response`,
+**Read first:** `src/lib/contract.ts` - `DiagnoseRequest/Response`,
 `ParsedLogs`, `VLOG_LINE`. Sample logs: `shared/fixtures/payments.vlog`.
 
-**Important:** the worker CANNOT import from `../../src/...` — it gets built
+**Important:** the worker CANNOT import from `../../src/...` - it gets built
 into a Docker image whose build context is only its own folder. Its small
 contract duplicate is intentional.
 
@@ -34,9 +34,9 @@ mkdir -p services/diagnostic-worker/src && cd services/diagnostic-worker
 npm init -y && npm i express@4 cors tsx && npm i -D @types/express @types/cors typescript
 ```
 
-(Note: `tsx` is a runtime dependency here — the container runs through it.)
+(Note: `tsx` is a runtime dependency here - the container runs through it.)
 
-- [ ] **Step 2: `src/contract-lite.ts`** — intentional duplicate of the shapes
+- [ ] **Step 2: `src/contract-lite.ts`** - intentional duplicate of the shapes
 this container needs (keep in sync with `src/lib/contract.ts` by hand):
 
 ```ts
@@ -107,7 +107,7 @@ app.post("/diagnose", (req, res) => {
     sandboxPassed: passed,
     rootCause: passed
       ? `deploy ${deployId} changed ${topComponent?.[0]} config handling (${topCode?.[0]})`
-      : "evidence inconclusive — human review required",
+      : "evidence inconclusive - human review required",
     recommendedAction: passed ? candidateAction : "escalate",
     checks,
   };
@@ -128,7 +128,7 @@ curl -s -X POST localhost:4400/diagnose -H 'content-type: application/json' \
 kill %1
 ```
 
-- [ ] **Step 5: commit** — `git add services/diagnostic-worker && git commit -m "feat: diagnostic worker — evidence checks for candidate remediation"`
+- [ ] **Step 5: commit** - `git add services/diagnostic-worker && git commit -m "feat: diagnostic worker - evidence checks for candidate remediation"`
 
 ---
 
@@ -151,7 +151,7 @@ EXPOSE 4400
 CMD ["npx", "tsx", "src/index.ts"]
 ```
 
-- [ ] **Step 2: build for amd64 and push.** Macs are ARM — Akash providers are
+- [ ] **Step 2: build for amd64 and push.** Macs are ARM - Akash providers are
 amd64. This is the classic gotcha; do not skip the platform flag. Use Docker Hub
 (public) with your username:
 
@@ -163,7 +163,7 @@ docker run --rm -p 4401:4400 <dockerhub-user>/vigil-diagnostic-worker:latest &
 curl -s localhost:4401/health   # {"ok":true,...}
 ```
 
-- [ ] **Step 3: `deploy.yaml`** (Akash SDL — starting point; verify against
+- [ ] **Step 3: `deploy.yaml`** (Akash SDL - starting point; verify against
 current docs at https://akash.network/docs and the sponsor booth, who likely
 have credits/wallet help):
 
@@ -201,7 +201,7 @@ deployment:
       count: 1
 ```
 
-- [ ] **Step 4: deploy via Akash Console** (https://console.akash.network —
+- [ ] **Step 4: deploy via Akash Console** (https://console.akash.network -
 fastest path; needs a wallet with AKT or trial credits from the sponsor):
 upload `deploy.yaml`, pick a provider bid, deploy, get the public URL.
 
@@ -215,11 +215,11 @@ curl -s -X POST $WORKER_URL/diagnose -H 'content-type: application/json' \
 # → sandboxPassed:true (same as local)
 ```
 
-- [ ] **Step 6: `AKASH.md`** — record: deployed URL, lease ID, provider,
+- [ ] **Step 6: `AKASH.md`** - record: deployed URL, lease ID, provider,
   screenshots of the console lease, the exact curl + response above. These are
   the receipts for judges and the README.
 
-- [ ] **Step 7: commit** — `git commit -m "feat: worker containerized + deployed on Akash (see AKASH.md)"`
+- [ ] **Step 7: commit** - `git commit -m "feat: worker containerized + deployed on Akash (see AKASH.md)"`
 
 **If Akash deployment is fought past ~45 min:** timebox it. The env-switch
 design means `WORKER_URL` can point at the local container; keep the SDL +
@@ -230,26 +230,26 @@ attempt notes in AKASH.md, get help from the booth, retry after C3.
 ### Task C3: Zero.xyz live log-parse capability
 
 **Files:**
-- Modify: `services/vigil-agent/src/integrations/zero-live.ts` (replace the stub — this is your ONE vigil-agent file)
+- Modify: `services/vigil-agent/src/integrations/zero-live.ts` (replace the stub - this is your ONE vigil-agent file)
 - Create: `services/diagnostic-worker/../..`/`docs/zero-receipts.md` → create as `docs/zero-receipts.md`
 
-**Consumed by:** `clients.ts#parseLogs` — already wired: when `ZERO_MODE=live`,
+**Consumed by:** `clients.ts#parseLogs` - already wired: when `ZERO_MODE=live`,
 it calls your `parseLogsLive(raw)`; any throw falls back to the local parser.
 So nothing you do here can break the demo.
 
-- [ ] **Step 1: read Zero's actual docs** (https://zero.xyz — plus whatever the
+- [ ] **Step 1: read Zero's actual docs** (https://zero.xyz - plus whatever the
 sponsor booth hands out: API base URL, auth scheme, how a capability/tool call
 is made and how cost is reported). Budget 45–60 min max including this step.
 What Vigil needs from Zero, in order of preference:
   1. A capability/tool invocation that can transform/parse text (ideal: send the
      raw `.vlog` text, get structure back).
   2. Any per-call paid capability invocation whose response we can map into
-     `ParsedLogs` fields (even partially) — the demo point is *acquiring a paid
+     `ParsedLogs` fields (even partially) - the demo point is *acquiring a paid
      capability on demand with a receipt*, and we can still merge Zero's output
      with the local parse.
 
 - [ ] **Step 2: implement `zero-live.ts`.** Shape (adapt endpoint/payload/auth
-to the real docs — the error handling and mapping stay):
+to the real docs - the error handling and mapping stay):
 
 ```ts
 import type { ParsedLogs } from "../../../../src/lib/contract";
@@ -258,7 +258,7 @@ const ZERO_API_URL = process.env.ZERO_API_URL ?? "https://api.zero.xyz"; // conf
 const ZERO_API_KEY = process.env.ZERO_API_KEY;
 
 /**
- * Buys one log-parse capability call from Zero. Throws on any failure —
+ * Buys one log-parse capability call from Zero. Throws on any failure -
  * the caller falls back to the local parser, so fail loudly, never
  * return half-fake data with parserSource: "zero".
  */
@@ -268,7 +268,7 @@ export async function parseLogsLive(raw: string): Promise<ParsedLogs> {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${ZERO_API_KEY}` },
     body: JSON.stringify({
-      // per docs — e.g. capability id + input payload:
+      // per docs - e.g. capability id + input payload:
       input: raw,
     }),
   });
@@ -278,7 +278,7 @@ export async function parseLogsLive(raw: string): Promise<ParsedLogs> {
 
   // Map the real response into ParsedLogs. Fill what Zero returns; anything
   // it doesn't cover, derive from the raw logs the same way the local
-  // parser does — but parserSource stays "zero" only if Zero's call
+  // parser does - but parserSource stays "zero" only if Zero's call
   // genuinely succeeded and its output was used.
   return {
     errorSignature: /* from data */ "ERR_TIMEOUT_CFG",
@@ -291,7 +291,7 @@ export async function parseLogsLive(raw: string): Promise<ParsedLogs> {
 }
 ```
 
-The literals above are what the mapping must PRODUCE for the fixture — replace
+The literals above are what the mapping must PRODUCE for the fixture - replace
 each `/* from data */` with the real field from Zero's response. If Zero's
 response can't populate a field, derive it from `raw` locally and say so in
 `docs/zero-receipts.md`.
@@ -308,11 +308,11 @@ parseLogsLive(readFileSync('../../shared/fixtures/payments.vlog','utf8')).then(p
 # → { errorSignature: 'ERR_TIMEOUT_CFG', ..., parserSource: 'zero', costUsd: <real cost> }
 ```
 
-- [ ] **Step 4: `docs/zero-receipts.md`** — paste the raw Zero response, the
+- [ ] **Step 4: `docs/zero-receipts.md`** - paste the raw Zero response, the
   cost/receipt info, and exactly which `ParsedLogs` fields came from Zero vs
   derived locally. Honesty here is a feature.
 
-- [ ] **Step 5: commit** — `git commit -m "feat: live Zero.xyz log-parse capability with receipts"`
+- [ ] **Step 5: commit** - `git commit -m "feat: live Zero.xyz log-parse capability with receipts"`
 
 **If Zero's API genuinely can't do this in the time box:** leave the stub
 throwing, write `docs/zero-receipts.md` explaining what was attempted and how
@@ -324,5 +324,5 @@ narrative survives; honesty beats theater.
 **Definition of done:** local worker curl passes; deployed Akash URL answers
 `/diagnose` correctly (or AKASH.md documents the timeboxed state); zero-live.ts
 either works live with receipts or documents why not. Push the branch. Post
-"C done · WORKER_URL=<url>" in team chat — the coordinator needs that URL at
+"C done · WORKER_URL=<url>" in team chat - the coordinator needs that URL at
 merge time.

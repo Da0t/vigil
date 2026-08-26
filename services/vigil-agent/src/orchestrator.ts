@@ -27,7 +27,7 @@ let running = false;
 let currentRun: AbortController | null = null;
 let thrashing = false;
 
-/** Emit a terminal FAILED state — the loop did not reach resolution. */
+/** Emit a terminal FAILED state - the loop did not reach resolution. */
 function failIncident(reason: string) {
   incidentOutcome.inc({ outcome: "failed" });
   log.warn({ reason }, "incident failed");
@@ -61,7 +61,7 @@ export async function startIncident() {
       return;
     }
 
-    // DETECT — honor the timeout: if error never climbs, do not pretend we detected.
+    // DETECT - honor the timeout: if error never climbs, do not pretend we detected.
     if (!(await until(() => errorRate() > 10, 20000, 250, signal))) {
       if (!signal.aborted) failIncident("no 5xx signal detected within timeout");
       return;
@@ -73,7 +73,7 @@ export async function startIncident() {
     await sleep(1200);
     if (signal.aborted) return;
 
-    // CONTEXT — real deploy history from the service (guarded).
+    // CONTEXT - real deploy history from the service (guarded).
     let deploys: { id: string; note: string; current: boolean }[];
     try {
       deploys = await getJson(`${PAYMENTS_URL}/deploys`);
@@ -90,7 +90,7 @@ export async function startIncident() {
     await sleep(1000);
     if (signal.aborted) return;
 
-    // CAPABILITY — logs are unreadable, buy a parse from Zero (or fall back).
+    // CAPABILITY - logs are unreadable, buy a parse from Zero (or fall back).
     let raw: string;
     try {
       raw = await getText(`${PAYMENTS_URL}/logs`);
@@ -113,7 +113,7 @@ export async function startIncident() {
     await sleep(600);
     if (signal.aborted) return;
 
-    // SANDBOX — disposable diagnostic evidence before any prod ask.
+    // SANDBOX - disposable diagnostic evidence before any prod ask.
     store.mutate((s) => {
       setStep(s, "capability", "done");
       setStep(s, "sandbox", "active");
@@ -135,7 +135,7 @@ export async function startIncident() {
     });
     if (signal.aborted) return;
 
-    // GATE — request the one scoped permission.
+    // GATE - request the one scoped permission.
     store.mutate((s) => {
       setStep(s, "remediation", "active");
       s.gateState = "pending";
@@ -174,7 +174,7 @@ export async function startIncident() {
       audit(s, `Gate allowed · scoped, single-use, ${grant.ttlSeconds ?? 60}s TTL`, "pomerium", "ok", grant.scope);
     });
 
-    // APPLY — through Pomerium when POMERIUM_URL is set (guarded in clients).
+    // APPLY - through Pomerium when POMERIUM_URL is set (guarded in clients).
     const applied = await applyRemediation("rollback", grant.token);
     store.mutate((s) => {
       audit(s, applied.ok ? "Rollback applied through the gate" : `Rollback failed (${applied.status})`, "agent", applied.ok ? "signal" : "alert", applied.ok ? "deploy #4821 reverted" : JSON.stringify(applied.body));
@@ -182,7 +182,7 @@ export async function startIncident() {
     });
     store.mutate((s) => audit(s, "Single-use credential consumed", "pomerium", "ok", "0 standing credentials held"));
 
-    // RECOVERY — honor the timeout: only claim resolved if error really recovered.
+    // RECOVERY - honor the timeout: only claim resolved if error really recovered.
     const recovered = await until(() => errorRate(3000) < 1, 20000, 250, signal);
     if (signal.aborted) return;
     if (!recovered) {
@@ -195,7 +195,7 @@ export async function startIncident() {
       audit(s, "Error rate recovered · incident resolved", "agent", "ok");
     });
 
-    // THE CLAMP — auto demo beat.
+    // THE CLAMP - auto demo beat.
     await sleep(2000);
     if (signal.aborted) return;
     await runThrash();

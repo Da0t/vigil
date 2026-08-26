@@ -11,7 +11,7 @@
  * "production" is treated as development.
  *
  * NOTE: this module lives outside any single service's Docker build context, so
- * — like src/lib/contract.ts — the prod images copy it in explicitly (see the
+ * - like src/lib/contract.ts - the prod images copy it in explicitly (see the
  * service Dockerfiles). The diagnostic-worker, which is deployed standalone to
  * Akash with an isolated build context, keeps its own self-contained copy.
  */
@@ -20,7 +20,7 @@ import { z, type ZodTypeAny, type ZodRawShape, type ZodObject, type infer as zIn
 /**
  * Re-export the single shared zod instance. Every backend service builds its
  * schemas with THIS `z` (import it from here, not from "zod" directly) so that
- * all schemas and the helpers below share one module instance — zod uses
+ * all schemas and the helpers below share one module instance - zod uses
  * `instanceof` internally, which silently breaks across duplicate installs.
  */
 export { z };
@@ -40,7 +40,7 @@ export function requiredInProd<T extends ZodTypeAny>(schema: T): T | z.ZodOption
 
 /**
  * Parse process.env against a service-specific schema. On failure, throw one
- * readable error listing every problem — so a misconfigured prod deploy dies at
+ * readable error listing every problem - so a misconfigured prod deploy dies at
  * boot with a precise message instead of failing mysteriously at request time.
  */
 export function parseEnv<T extends ZodRawShape>(service: string, shape: T): zInfer<ZodObject<T>> {

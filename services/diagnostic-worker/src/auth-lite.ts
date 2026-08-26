@@ -1,10 +1,10 @@
 /**
- * auth-lite — self-contained duplicate of the parts of services/shared/auth.ts
+ * auth-lite - self-contained duplicate of the parts of services/shared/auth.ts
  * this container needs (verify inbound requests, sign sandbox attestations).
  *
  * Like contract-lite.ts, the worker is built from an isolated Docker context and
  * cannot import ../../shared/auth. The canonical string + attestation message
- * formats below MUST stay BYTE-CONSISTENT with services/shared/auth.ts — the
+ * formats below MUST stay BYTE-CONSISTENT with services/shared/auth.ts - the
  * agent signs requests with that module and the gate verifies attestations with
  * it, so any divergence breaks authentication silently.
  */

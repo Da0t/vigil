@@ -1,4 +1,4 @@
-# Person B — The Gate: policy, single-use grants, Pomerium (branch `person-b-gate`)
+# Person B - The Gate: policy, single-use grants, Pomerium (branch `person-b-gate`)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans if
 > available; otherwise execute top-to-bottom, one todo per task. Commit after
@@ -14,7 +14,7 @@ Pomerium as the proxy every destructive prod call must transit.
 priority #1 in the master plan). The gate service with real single-use grants
 must work; Pomerium routing layers on top.
 
-**Read first:** `src/lib/contract.ts` — `GrantRequest`, `GrantResponse`,
+**Read first:** `src/lib/contract.ts` - `GrantRequest`, `GrantResponse`,
 `VerifyRequest`, `VerifyResponse`, `PORTS`. Your callers:
 - vigil-agent POSTs `GrantRequest` to `/grants`, expects `GrantResponse`.
 - payments-api POSTs `VerifyRequest` to `/grants/verify` on every destructive
@@ -22,7 +22,7 @@ must work; Pomerium routing layers on top.
 
 **Policy thresholds (must match the sim's story):** blast radius ≤ 3 services,
 budget ≤ $5, destructive actions need `sandboxPassed=true`, deny after ≥ 2
-consecutive failures. Rule order matters — blast radius first, so the thrash
+consecutive failures. Rule order matters - blast radius first, so the thrash
 denial reads "blast radius over limit".
 
 ---
@@ -84,7 +84,7 @@ test("denies after repeat failures (self-reported or gate-observed)", () => {
 });
 ```
 
-Run: `npx tsx src/policy.test.ts` — expect FAIL ("Cannot find module './policy'").
+Run: `npx tsx src/policy.test.ts` - expect FAIL ("Cannot find module './policy'").
 
 - [ ] **Step 3: implement `src/policy.ts`** (complete file):
 
@@ -127,8 +127,8 @@ export function evaluatePolicy(
 }
 ```
 
-- [ ] **Step 4:** `npx tsx src/policy.test.ts` — all 5 tests PASS.
-- [ ] **Step 5: commit** — `git add services/gate && git commit -m "feat: gate policy engine with tests"`
+- [ ] **Step 4:** `npx tsx src/policy.test.ts` - all 5 tests PASS.
+- [ ] **Step 5: commit** - `git add services/gate && git commit -m "feat: gate policy engine with tests"`
 
 ---
 
@@ -174,7 +174,7 @@ test("unknown token is rejected", () => {
 });
 ```
 
-Run: `npx tsx src/grants.test.ts` — expect FAIL.
+Run: `npx tsx src/grants.test.ts` - expect FAIL.
 
 - [ ] **Step 2: implement `src/grants.ts`**:
 
@@ -218,15 +218,15 @@ export class GrantStore {
 
   list(): Grant[] { return [...this.grants.values()]; }
 
-  /** Count of live, unconsumed grants — should be 0 at rest. */
+  /** Count of live, unconsumed grants - should be 0 at rest. */
   standing(now = Date.now()): number {
     return this.list().filter((g) => !g.consumed && now <= g.expiresAt).length;
   }
 }
 ```
 
-- [ ] **Step 3:** `npx tsx src/grants.test.ts` — all 4 PASS.
-- [ ] **Step 4: commit** — `git commit -m "feat: single-use TTL grant store with tests"`
+- [ ] **Step 3:** `npx tsx src/grants.test.ts` - all 4 PASS.
+- [ ] **Step 4: commit** - `git commit -m "feat: single-use TTL grant store with tests"`
 
 ---
 
@@ -235,7 +235,7 @@ export class GrantStore {
 **Files:**
 - Create: `services/gate/src/server.ts`
 
-**Produces:** `:4200` — `POST /grants`, `POST /grants/verify`, `GET /grants`
+**Produces:** `:4200` - `POST /grants`, `POST /grants/verify`, `GET /grants`
 (decision audit), `GET /health`.
 
 - [ ] **Step 1: implement `src/server.ts`** (complete file):
@@ -253,7 +253,7 @@ const TTL_SECONDS = 60;
 const store = new GrantStore();
 /** Gate-observed denial counts per requester+action (behavior-reactive policy). */
 const denials = new Map<string, number>();
-/** Full decision log for GET /grants — the receipts. */
+/** Full decision log for GET /grants - the receipts. */
 const decisions: object[] = [];
 
 const app = express();
@@ -304,7 +304,7 @@ curl -s -X POST localhost:4200/grants -H 'content-type: application/json' -d '{"
 # verify once (use the token from above):
 curl -s -X POST localhost:4200/grants/verify -H 'content-type: application/json' -d '{"token":"vg_PASTE","action":"rollback","service":"payments-api"}'
 # → {"valid":true}
-# verify twice — single use:
+# verify twice - single use:
 curl -s -X POST localhost:4200/grants/verify -H 'content-type: application/json' -d '{"token":"vg_PASTE","action":"rollback","service":"payments-api"}'
 # → {"valid":false,"reason":"grant already used"}
 # thrash denial:
@@ -314,7 +314,7 @@ curl -s localhost:4200/grants | python3 -m json.tool | head -20   # decisions re
 kill %1
 ```
 
-- [ ] **Step 3: commit** — `git commit -m "feat: gate service — policy, single-use grants, decision log"`
+- [ ] **Step 3: commit** - `git commit -m "feat: gate service - policy, single-use grants, decision log"`
 
 ---
 
@@ -332,16 +332,16 @@ permissive for the demo, the destructive path is still hard-gated.
 
 - [ ] **Step 1: verify current Pomerium config syntax against the docs.**
   Fetch https://www.pomerium.com/docs (routes + policy for Pomerium Core,
-  docker quickstart). The config below is the starting point — correct it to
+  docker quickstart). The config below is the starting point - correct it to
   current syntax rather than trusting it blindly. Sponsor booth can help.
 
-- [ ] **Step 2: `pomerium/config.yaml`** (starting point — adjust per docs):
+- [ ] **Step 2: `pomerium/config.yaml`** (starting point - adjust per docs):
 
 ```yaml
 # Pomerium Core, all-in-one, demo mode.
 # Vigil's destructive path: agent → :4300 (Pomerium) → payments-api :4100
 address: :4300
-insecure_server: true          # local demo only — no TLS
+insecure_server: true          # local demo only - no TLS
 authenticate_service_url: https://authenticate.pomerium.app
 
 routes:
@@ -365,10 +365,10 @@ routes:
 docker run --rm -p 4300:4300 \
   -v "$PWD/pomerium/config.yaml:/pomerium/config.yaml" \
   pomerium/pomerium:latest
-# other terminal — payments-api running from main? If not merged yet, verify routing with any local :4100 stub:
+# other terminal - payments-api running from main? If not merged yet, verify routing with any local :4100 stub:
 python3 -m http.server 4100 &   # temporary target just to prove proxying
 curl -s -o /dev/null -w '%{http_code}\n' -X POST localhost:4300/rollback   # non-502 = routed
-curl -s -o /dev/null -w '%{http_code}\n' localhost:4300/logs               # 404 — path NOT routed (the point)
+curl -s -o /dev/null -w '%{http_code}\n' localhost:4300/logs               # 404 - path NOT routed (the point)
 ```
 
 - [ ] **Step 4 (stretch, only if Steps 1–3 done): tighten policy.** Try a real
@@ -376,14 +376,14 @@ curl -s -o /dev/null -w '%{http_code}\n' localhost:4300/logs               # 404
   docs) so Pomerium itself rejects requests without a grant header, e.g. a
   policy that requires the `x-vigil-grant` header to be present. Screenshot a
   Pomerium denial for the README. If the syntax fights you for more than 30
-  minutes, keep the layered model and move on — the grant enforcement is
+  minutes, keep the layered model and move on - the grant enforcement is
   already real at the service.
 
-- [ ] **Step 5: `pomerium/README.md`** — write down: exact docker command, which
+- [ ] **Step 5: `pomerium/README.md`** - write down: exact docker command, which
   Pomerium version, what you verified (routed paths, blocked paths, any policy),
   and the layering statement above. Person D copies this into the main README.
 
-- [ ] **Step 6: commit** — `git commit -m "feat: pomerium route restricting prod to two gated destructive paths"`
+- [ ] **Step 6: commit** - `git commit -m "feat: pomerium route restricting prod to two gated destructive paths"`
 
 ---
 

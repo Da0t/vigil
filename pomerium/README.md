@@ -1,4 +1,4 @@
-# Pomerium — the proxy in front of the two destructive prod routes
+# Pomerium - the proxy in front of the two destructive prod routes
 
 Vigil's destructive path is **layered**:
 
@@ -23,8 +23,8 @@ Two independent layers must both pass for a destructive action to land:
 This is the "layered model" from the plan. Enforcement of *single-use grants* is
 **real and unconditional at the gate**; Pomerium adds a **real route-restriction**
 layer on top (verified below). The Pomerium *auth* policy is intentionally
-permissive for the local demo (`allow_public_unauthenticated_access`) — we do not
-run an external IdP — so Pomerium's job here is route reachability, not identity.
+permissive for the local demo (`allow_public_unauthenticated_access`) - we do not
+run an external IdP - so Pomerium's job here is route reachability, not identity.
 
 ## Verified against
 
@@ -59,7 +59,7 @@ docker run --rm --name vigil-pomerium -p 4300:4300 \
   pomerium/pomerium:latest
 ```
 
-…or bake the config into a throwaway image (no bind mount at all — this is what
+…or bake the config into a throwaway image (no bind mount at all - this is what
 was used to verify here, because the CI/scratch path was not a Docker-shared
 directory):
 
@@ -73,7 +73,7 @@ docker run --rm --name vigil-pomerium -p 4300:4300 vigil-pomerium
 
 Backend was a stand-in on `:4100` (`python3 -m http.server 4100`) purely to prove
 proxying; in the real demo payments-api serves `:4100`. `POST` cleanly
-distinguishes the two outcomes — the stub answers `501` to POST (so `501` ⇒ the
+distinguishes the two outcomes - the stub answers `501` to POST (so `501` ⇒ the
 request reached the backend), while Pomerium answers `404` for any path it has no
 route for:
 
@@ -81,15 +81,15 @@ route for:
 |---|---|---|
 | `POST /rollback` | `501` | **routed** through Pomerium to `:4100` |
 | `POST /restart`  | `501` | **routed** through Pomerium to `:4100` |
-| `POST /logs`     | `404` | **blocked** — no route, answered by Pomerium |
+| `POST /logs`     | `404` | **blocked** - no route, answered by Pomerium |
 | `POST /metrics`  | `404` | **blocked** |
 | `POST /deploys`  | `404` | **blocked** |
 | `POST /admin`    | `404` | **blocked** |
 | `POST /`         | `404` | **blocked** |
 
 Proof of *source*: the `/rollback` body is python's error page (`<!DOCTYPE HTML>`,
-uppercase — from the backend), the `/logs` body is Pomerium's own `404`
-(`<!DOCTYPE html>`, lowercase — never left the proxy). Pomerium's authorize log
+uppercase - from the backend), the `/logs` body is Pomerium's own `404`
+(`<!DOCTYPE html>`, lowercase - never left the proxy). Pomerium's authorize log
 for a routed call shows `path:/rollback ... allow:true ["accept"]`.
 
 Reproduce (with the container up and a target on `:4100`):
@@ -125,8 +125,8 @@ the main README honesty table._
 
 | Concern | dev (`config.yaml`) | prod (`config.prod.yaml`) |
 |---|---|---|
-| Transport | `insecure_server: true` (plain HTTP) | HTTPS only — grant tokens never travel cleartext |
-| Caller auth | `allow_public_unauthenticated_access` | `authenticated_user: true` — anonymous denied at the proxy |
+| Transport | `insecure_server: true` (plain HTTP) | HTTPS only - grant tokens never travel cleartext |
+| Caller auth | `allow_public_unauthenticated_access` | `authenticated_user: true` - anonymous denied at the proxy |
 | Routes | `/rollback`, `/restart` only | same (everything else 404s) |
 
 Secrets/certs are injected at runtime via env (`SHARED_SECRET`, `COOKIE_SECRET`,
@@ -144,7 +144,7 @@ Pomerium**, never directly from the host:
   `POMERIUM_URL` is `requiredInProd`, so in production the agent always routes
   through Pomerium; the direct-to-payments fallback is structurally dev-only.
 - **Network path:** the prod compose/orchestration does **not** publish
-  payments-api's `:4100` to the host — only Pomerium's `:443` is exposed, and
+  payments-api's `:4100` to the host - only Pomerium's `:443` is exposed, and
   payments-api is reachable solely on the internal network (see the prod compose
   notes / `docker-compose.prod.yml` from Phase 3). Even a leaked grant token
   cannot be replayed from outside the mesh.

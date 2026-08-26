@@ -49,7 +49,7 @@ async function grantValid(token: string | undefined, action: string, correlation
     // Fail CLOSED in prod: with no gate we cannot prove a grant, so refuse.
     // Fail CONVENIENT in dev: the ungated local path keeps the demo runnable.
     if (isProd) return { ok: false, reason: "no gate configured (fail closed)" };
-    logger.warn({ action }, "GATE_URL unset — allowed ungated (dev only)");
+    logger.warn({ action }, "GATE_URL unset - allowed ungated (dev only)");
     return { ok: true };
   }
   if (!token) return { ok: false, reason: "no grant presented" };

@@ -24,7 +24,7 @@ const TTL_SECONDS = 60;
 const store = createGrantStore(env.REDIS_URL);
 /** Behavior-reactive throttle, keyed on AUTHENTICATED identity + action. */
 const throttle = new DenialThrottle();
-/** Bounded decision log for GET /grants — the receipts (never includes tokens). */
+/** Bounded decision log for GET /grants - the receipts (never includes tokens). */
 const decisions: object[] = [];
 
 const requireAuth = requireInternalAuth({ secret: env.VIGIL_INTERNAL_SECRET, enabled: AUTH_ENABLED });
@@ -107,7 +107,7 @@ app.post("/grants/verify", requireAuth, validateBody(verifyRequestSchema), async
 }));
 
 app.get("/grants", requireAuth, asyncHandler(async (_req, res) => {
-  // Never leak live token strings — redact to a short, non-usable prefix.
+  // Never leak live token strings - redact to a short, non-usable prefix.
   const grants = (await store.list()).map((g) => ({ ...g, token: `${g.token.slice(0, 8)}…` }));
   res.json({ standingGrants: await store.standing(), grants, decisions });
 }));

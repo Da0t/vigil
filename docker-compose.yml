@@ -1,8 +1,8 @@
-# Vigil — full-stack demo composition (DEV profile).
+# Vigil - full-stack demo composition (DEV profile).
 #
 # `docker compose up --build` brings up the whole system in development mode
 # (VIGIL_ENV=development): in-memory grant store, service auth disabled, local
-# fallbacks — so the demo runs with zero secrets. For a hardened prod-mode stack
+# fallbacks - so the demo runs with zero secrets. For a hardened prod-mode stack
 # (Redis, service auth, attestation, TLS) use the override:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 #
@@ -119,7 +119,7 @@ services:
       worker:
         condition: service_healthy
 
-  # Optional dev proxy. Prod uses config.prod.yaml (TLS + policy) — see
+  # Optional dev proxy. Prod uses config.prod.yaml (TLS + policy) - see
   # docker-compose.prod.yml and pomerium/README.md.
   pomerium:
     image: pomerium/pomerium:latest

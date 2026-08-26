@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * E2E for the incident page. Runs against the web app in SIM mode (no
- * NEXT_PUBLIC_AGENT_URL), so it needs no backend — the scripted loop drives the
+ * NEXT_PUBLIC_AGENT_URL), so it needs no backend - the scripted loop drives the
  * whole flow. Run:  npx playwright install chromium && npm run test:e2e
  */
 export default defineConfig({

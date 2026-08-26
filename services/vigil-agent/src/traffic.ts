@@ -5,7 +5,7 @@ let inFlight = false;
 export function startTraffic(paymentsUrl: string, intervalMs = 100) {
   stopTraffic();
   timer = setInterval(async () => {
-    // Skip this tick if the prior request is still pending — no overlapping,
+    // Skip this tick if the prior request is still pending - no overlapping,
     // unbounded pile-up of un-awaited fetches when payments-api is slow/down.
     if (inFlight) return;
     inFlight = true;
@@ -33,7 +33,7 @@ export function errorRate(windowMs = 3000): number {
   return (100 * w.filter((r) => !r.ok).length) / w.length;
 }
 
-/** 54 bucketed samples over the last 9s — matches the sparkline the UI expects. */
+/** 54 bucketed samples over the last 9s - matches the sparkline the UI expects. */
 export function series(samples = 54, windowMs = 9000): number[] {
   const now = Date.now();
   const bucket = windowMs / samples;

@@ -1,4 +1,4 @@
-# Vigil — Production Hardening
+# Vigil - Production Hardening
 
 This document summarizes the production-hardening work, the dev vs prod
 environment matrix, the threat model addressed, and the honest remaining
@@ -17,7 +17,7 @@ than `production` is development.
 - **Dev**: unset vars fall back to local defaults; service auth and attestation
   are disabled; the grant store is in-memory. The demo runs with **zero secrets**.
 - **Prod**: required vars are validated at boot (the service refuses to start if
-  any is missing — see `services/shared/env.ts`), auth + attestation are
+  any is missing - see `services/shared/env.ts`), auth + attestation are
   enforced, and the grant store is Redis-backed.
 
 ## What changed, by area
@@ -31,7 +31,7 @@ than `production` is development.
 | Token leakage | `GET /grants` returned live tokens | tokens redacted to an unusable prefix; endpoint requires auth |
 | Throttle | keyed on spoofable string, never reset (permanent self-lock) | keyed on authenticated identity, resets on success, expires on a window |
 | Admin/demo routes | unauthenticated | compiled out in prod (`if (isDev)`) → 404 |
-| Grant store | in-process `Map` (single replica, lost on restart) | pluggable: in-memory (dev) / **Redis atomic Lua CAS** (prod) — single-use holds across replicas + restarts |
+| Grant store | in-process `Map` (single replica, lost on restart) | pluggable: in-memory (dev) / **Redis atomic Lua CAS** (prod) - single-use holds across replicas + restarts |
 | Network calls | unguarded `fetch` | `AbortSignal.timeout` + `r.ok` + try/catch; fail closed on security paths |
 | Crashes | unhandled | `unhandledRejection`/`uncaughtException` nets; Express async errors forwarded; graceful SIGTERM/SIGINT shutdown |
 | Incident loop | races on reset/thrash; timeouts ignored | `AbortController`; honored `until()` timeouts → terminal `failed` state |
@@ -48,15 +48,15 @@ missing) per service:
 | Var | gate | payments | worker | agent |
 |---|:-:|:-:|:-:|:-:|
 | `VIGIL_INTERNAL_SECRET` | ✅ | ✅ | ✅ | ✅ |
-| `WORKER_ATTEST_SECRET` | ✅ | — | ✅ | ❌ (must NOT hold it) |
-| `REDIS_URL` | ✅ | — | — | — |
-| `GATE_URL` | — | ✅ | — | ✅ |
-| `WORKER_URL` / `POMERIUM_URL` | — | — | — | ✅ |
+| `WORKER_ATTEST_SECRET` | ✅ | - | ✅ | ❌ (must NOT hold it) |
+| `REDIS_URL` | ✅ | - | - | - |
+| `GATE_URL` | - | ✅ | - | ✅ |
+| `WORKER_URL` / `POMERIUM_URL` | - | - | - | ✅ |
 
 ## Threat model addressed
 
 - **External attacker with no secret** cannot mint or verify a grant, cannot
-  reach destructive routes, and cannot set `requestedBy` — all internal calls
+  reach destructive routes, and cannot set `requestedBy` - all internal calls
   are HMAC-authenticated with a freshness window and body integrity.
 - **A compromised agent** cannot forge sandbox evidence: `sandboxPassed` only
   counts with a valid attestation signed by the worker's secret, which the agent

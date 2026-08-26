@@ -65,7 +65,7 @@ export async function initErrorReporting(service: string): Promise<void> {
   const dsn = process.env.SENTRY_DSN;
   if (!dsn) return;
   try {
-    // Optional dependency — only needed when error reporting is enabled.
+    // Optional dependency - only needed when error reporting is enabled.
     const mod = (await import(/* @vite-ignore */ "@sentry/node" as string)) as {
       init(o: unknown): void;
       captureException(e: unknown): void;
@@ -74,7 +74,7 @@ export async function initErrorReporting(service: string): Promise<void> {
     sentry = mod;
     console.log(`[${service}] error reporting: Sentry enabled`);
   } catch {
-    console.warn(`[${service}] SENTRY_DSN set but @sentry/node not installed — skipping`);
+    console.warn(`[${service}] SENTRY_DSN set but @sentry/node not installed - skipping`);
   }
 }
 
@@ -102,6 +102,6 @@ export async function initTracing(service: string): Promise<void> {
     new NodeSDK({ serviceName: service, instrumentations: [getNodeAutoInstrumentations()] }).start();
     console.log(`[${service}] tracing: OpenTelemetry enabled`);
   } catch {
-    console.warn(`[${service}] OTEL endpoint set but @opentelemetry packages not installed — skipping`);
+    console.warn(`[${service}] OTEL endpoint set but @opentelemetry packages not installed - skipping`);
   }
 }

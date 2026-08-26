@@ -2,7 +2,7 @@
  * Behavior-reactive denial throttle.
  *
  * The gate tightens policy after repeated denials for the same authenticated
- * caller+action — but this MUST NOT be a permanent self-lock, and it must be
+ * caller+action - but this MUST NOT be a permanent self-lock, and it must be
  * keyed on the authenticated identity (from the request signature), never on a
  * spoofable request-body string.
  *
@@ -49,7 +49,7 @@ export class DenialThrottle {
     this.entries.delete(key);
   }
 
-  /** Drop all expired entries — call periodically to bound memory. */
+  /** Drop all expired entries - call periodically to bound memory. */
   sweep(now: number = Date.now()): void {
     for (const [key, e] of this.entries) {
       if (now - e.firstAt > this.windowMs) this.entries.delete(key);

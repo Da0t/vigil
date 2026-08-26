@@ -1,5 +1,5 @@
 /**
- * contract-lite — intentional, self-contained duplicate of the shapes this
+ * contract-lite - intentional, self-contained duplicate of the shapes this
  * container needs from src/lib/contract.ts.
  *
  * The diagnostic worker is built into a Docker image whose build context is

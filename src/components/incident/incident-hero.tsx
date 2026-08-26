@@ -74,7 +74,7 @@ export function IncidentHero({ incident }: { incident: Incident }) {
 
         {agentMode && interrupted && (
           <p className="mt-2 text-[11px] text-amber-500">
-            Stream interrupted — showing the last live snapshot,{" "}
+            Stream interrupted - showing the last live snapshot,{" "}
             {live.status === "lost" ? "still retrying" : "reconnecting"}…
           </p>
         )}

@@ -19,8 +19,8 @@ export interface VerifyResult {
 /**
  * A grant store issues single-use, scoped, TTL'd grants and consumes them
  * exactly once. The interface is async so it can be backed by a shared store
- * (Redis) in prod — which is what makes single-use hold across replicas and
- * survive restarts — while dev keeps a zero-dependency in-memory store.
+ * (Redis) in prod - which is what makes single-use hold across replicas and
+ * survive restarts - while dev keeps a zero-dependency in-memory store.
  */
 export interface GrantStore {
   mint(action: string, service: string, ttlSeconds?: number, now?: number): Promise<Grant>;

@@ -49,7 +49,7 @@ app.get(AGENT_ROUTES.events, (req, res) => {
   sseClientsGauge.set(sseClients.size);
 
   // Each message is a full LoopState snapshot, so a frame dropped under
-  // backpressure is harmless — the next carries the latest state. A client that
+  // backpressure is harmless - the next carries the latest state. A client that
   // stays backed up (slow consumer) is dropped so it can't balloon memory.
   let strikes = 0;
   const send = (s: LoopState) => {
@@ -73,7 +73,7 @@ app.get(AGENT_ROUTES.state, (_req, res) => { res.json(store.state); });
 
 // Demo trigger controls. Unauthenticated by nature (the browser drives them),
 // so they are dev-only. In prod the loop is driven by real alerting, not a
-// button — these are compiled out (404). See PRODUCTION.md for the prod trigger.
+// button - these are compiled out (404). See PRODUCTION.md for the prod trigger.
 if (isDev) {
   app.post(AGENT_ROUTES.start, (_req, res) => { void startIncident(); res.json({ ok: true }); });
   app.post(AGENT_ROUTES.thrash, (_req, res) => { void thrash(); res.json({ ok: true }); });

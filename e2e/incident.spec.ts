@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 /**
  * Drives the incident page's scripted sim end to end: press Play, assert the
  * loop reaches "resolved", and assert the mass-restart escalation is DENIED
- * (the behavior-reactive clamp). Runs in SIM mode — no backend required.
+ * (the behavior-reactive clamp). Runs in SIM mode - no backend required.
  */
 test("incident loop resolves and the escalation is denied", async ({ page }) => {
   await page.goto("/incidents/inc-4821");

@@ -71,7 +71,7 @@ app.post("/diagnose", requireAuth, (req, res) => {
     sandboxPassed: passed,
     rootCause: passed
       ? `deploy ${deployId} changed ${topComponent?.[0]} config handling (${topCode?.[0]})`
-      : "evidence inconclusive — human review required",
+      : "evidence inconclusive - human review required",
     recommendedAction: passed ? candidateAction : "escalate",
     checks,
     attestation,
@@ -91,7 +91,7 @@ app.post("/diagnose", requireAuth, (req, res) => {
   res.json(response);
 });
 
-// Global safety nets + graceful shutdown (inline — isolated build context).
+// Global safety nets + graceful shutdown (inline - isolated build context).
 process.on("unhandledRejection", (r) => console.error("[diagnostic-worker] unhandledRejection:", r));
 process.on("uncaughtException", (e) => { console.error("[diagnostic-worker] uncaughtException:", e); process.exit(1); });
 

@@ -5,13 +5,13 @@
  * string that binds: HTTP method, request path, the CALLER'S CLAIMED IDENTITY,
  * a timestamp, and a hash of the raw body. The receiver recomputes it with the
  * shared secret and compares in constant time. Because the caller identity is
- * inside the signed payload, an external attacker cannot forge who they are —
+ * inside the signed payload, an external attacker cannot forge who they are -
  * so downstream policy (e.g. the gate's `requestedBy`) can trust the
  * authenticated identity instead of a request-body string.
  *
  * Threat model: this shared-secret scheme authenticates *membership* in the
  * internal mesh and integrity/freshness of each call. It does NOT cryptograph-
- * ically distinguish one internal peer from another (they share the secret) —
+ * ically distinguish one internal peer from another (they share the secret) -
  * the upgrade path is per-caller keys or mTLS/SPIFFE, noted in PRODUCTION.md.
  */
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
@@ -94,13 +94,13 @@ function hexEqual(a: string, b: string): boolean {
 }
 
 /* ------------------------------------------------------------------ */
-/* Sandbox attestation — the worker's proof that a diagnosis really ran */
+/* Sandbox attestation - the worker's proof that a diagnosis really ran */
 /* ------------------------------------------------------------------ */
 
 /**
  * The worker signs this over (service, deployId, sandboxPassed) with a secret
  * ONLY the worker and the gate share (NOT the agent). The agent forwards the
- * opaque signature to the gate, which re-derives it — so the agent cannot fake
+ * opaque signature to the gate, which re-derives it - so the agent cannot fake
  * `sandboxPassed`; only the worker that actually ran the sandbox can vouch.
  */
 function attestationMessage(service: string, deployId: string, sandboxPassed: boolean): string {
@@ -122,7 +122,7 @@ export function verifyAttestation(
 }
 
 /* ------------------------------------------------------------------ */
-/* Express glue — raw-body capture + auth middleware                   */
+/* Express glue - raw-body capture + auth middleware                   */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -149,7 +149,7 @@ type AuthNext = (err?: unknown) => void;
 
 /**
  * Express middleware enforcing internal auth.
- *   - enabled=false (dev, no secret): pass through — fail convenient.
+ *   - enabled=false (dev, no secret): pass through - fail convenient.
  *   - enabled=true, secret missing: 500 (misconfigured, fail closed).
  *   - otherwise: verify; 401 on failure; on success set req.vigilCaller.
  */

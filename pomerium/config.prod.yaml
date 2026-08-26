@@ -1,11 +1,11 @@
-# Pomerium — PRODUCTION profile for Vigil.
+# Pomerium - PRODUCTION profile for Vigil.
 #
 # The TLS-terminated choke point in front of payments-api's two destructive
 # routes. Differs from config.yaml (dev) in three security-relevant ways:
 #
-#   1. NO `insecure_server: true` — Pomerium serves HTTPS only, so grant tokens
+#   1. NO `insecure_server: true` - Pomerium serves HTTPS only, so grant tokens
 #      never travel in cleartext (config.yaml's plain HTTP is dev-only).
-#   2. NO `allow_public_unauthenticated_access` — every call must carry a
+#   2. NO `allow_public_unauthenticated_access` - every call must carry a
 #      verifiable identity; anonymous callers are denied at the proxy.
 #   3. Still only `/rollback` and `/restart` are routed; every other prod path
 #      (`/logs`, `/metrics`, `/deploys`, `/admin/*`, …) has no route ⇒ 404.

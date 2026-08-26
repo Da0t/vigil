@@ -5,7 +5,7 @@ services:
     # Digest-pinned for reproducibility (not :latest). Re-pin after each push:
     #   docker manifest inspect -v da0t/vigil-diagnostic-worker:latest \
     #     | jq -r '.Descriptor.digest'
-    # The lease URL Akash assigns is NOT committed here — it is passed to the
+    # The lease URL Akash assigns is NOT committed here - it is passed to the
     # agent at runtime as WORKER_URL.
     image: da0t/vigil-diagnostic-worker@sha256:0d782ad5a668209070622ca03d40b09257a0c8b687d46e8ae74e2bc900a1e1c1
     expose:

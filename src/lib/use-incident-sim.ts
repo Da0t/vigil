@@ -6,7 +6,7 @@ import type { GateState, LoopState } from "@/lib/contract";
 
 export type { GateState };
 
-/** The sim and the live orchestrator share one state shape — see contract.ts. */
+/** The sim and the live orchestrator share one state shape - see contract.ts. */
 export type SimState = LoopState;
 
 const TICK = 0.2;

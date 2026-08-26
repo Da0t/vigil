@@ -58,15 +58,15 @@ export const PORTS = {
 
 /** vigil-agent HTTP surface (consumed by the frontend). */
 export const AGENT_ROUTES = {
-  /** GET — SSE stream; each message is a full LoopState JSON snapshot. */
+  /** GET - SSE stream; each message is a full LoopState JSON snapshot. */
   events: "/events",
-  /** GET — current LoopState as plain JSON. */
+  /** GET - current LoopState as plain JSON. */
   state: "/state",
-  /** POST — breaks payments-api and starts the autonomous loop. */
+  /** POST - breaks payments-api and starts the autonomous loop. */
   start: "/demo/start",
-  /** POST — agent attempts a mass-restart; the gate should deny it. */
+  /** POST - agent attempts a mass-restart; the gate should deny it. */
   thrash: "/demo/thrash",
-  /** POST — restores payments-api and resets loop state. */
+  /** POST - restores payments-api and resets loop state. */
   reset: "/demo/reset",
 } as const;
 
@@ -81,7 +81,7 @@ export interface GrantRequest {
   sandboxPassed: boolean;
   budgetUsed: number;
   consecutiveFailures: number;
-  requestedBy: string; // "vigil-agent" — in prod the gate ignores this and uses
+  requestedBy: string; // "vigil-agent" - in prod the gate ignores this and uses
   // the authenticated caller identity from the request signature.
   /** Deploy under diagnosis; binds the sandbox attestation to a specific incident. */
   deployId?: string;
@@ -96,7 +96,7 @@ export interface GrantResponse {
   verdict: "allowed" | "denied";
   scope: string;
   reason?: string;
-  /** Single-use bearer token — present only when allowed. */
+  /** Single-use bearer token - present only when allowed. */
   token?: string;
   ttlSeconds?: number; // 60
   singleUse?: boolean; // true
@@ -132,7 +132,7 @@ export interface DiagnoseResponse {
   /**
    * Worker-signed attestation over {service, deployId, sandboxPassed}, present
    * when the worker holds a signing secret. The agent forwards it to the gate,
-   * which verifies it — so a destructive grant never rests on an unsigned boolean.
+   * which verifies it - so a destructive grant never rests on an unsigned boolean.
    */
   attestation?: string;
 }

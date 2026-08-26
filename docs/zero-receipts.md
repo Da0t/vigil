@@ -1,4 +1,4 @@
-# Zero.xyz log-parse capability — receipts
+# Zero.xyz log-parse capability - receipts
 
 STATUS: ✅ LIVE. Signed in via `zero auth login` (datq.nguyen06@gmail.com, $5
 starter credit). `.env` has `ZERO_MODE=live`.
@@ -14,7 +14,7 @@ and wallet signing.
 
 - **Capability chosen:** `402.com.tr AI Field Extractor`
   (`402-com-tr-ai-field-extractor-a6518290`,
-  `https://402.com.tr/api/x402/ai-extract`) — an LLM-backed extractor
+  `https://402.com.tr/api/x402/ai-extract`) - an LLM-backed extractor
   (Claude Haiku 4.5) that pulls named fields out of arbitrary text. Chosen via
   `zero search "extract fields from raw text log line"`.
   - *Why not the "Strale Log Parser" (our first pick):* live testing showed it
@@ -31,8 +31,8 @@ and wallet signing.
   5 → 4.777997 USDC across verification. A sample payment receipt:
   `{protocol:"x402", chain:"base", txHash:"0x04a1dd8e…3a94a38", amount:"0.03", asset:"USDC"}`.
 - **Full loop:** with `ZERO_MODE=live`, the incident loop's capability step is a
-  genuine paid Zero call — audit shows
-  `Capability called · $0.03 · zero — ERR_TIMEOUT_CFG in stripe_adapter`, and the
+  genuine paid Zero call - audit shows
+  `Capability called · $0.03 · zero - ERR_TIMEOUT_CFG in stripe_adapter`, and the
   cost flows into the on-screen budget meter (`budgetUsed=$0.03`).
 
 ## Field provenance
@@ -41,7 +41,7 @@ and wallet signing.
 extractor. `sampleLines` are the raw `E`-level lines (display only). `costUsd`
 comes from Zero's payment receipt. If the capability ever returns no usable
 fields, `parseLogsLive` throws and `clients.ts` falls back to the local regex
-parser (`parserSource:"fallback"`) — the demo never breaks.
+parser (`parserSource:"fallback"`) - the demo never breaks.
 
 ---
 
@@ -73,7 +73,7 @@ Findings:
 ### Consequence for this integration (honesty note)
 
 The frozen shared contract (`src/lib/contract.ts`) standardized on
-`ZERO_API_KEY` + `ZERO_MODE=live` and an HTTP-shaped call — decided before this
+`ZERO_API_KEY` + `ZERO_MODE=live` and an HTTP-shaped call - decided before this
 discovery. Zero's real primary interface is the **CLI + USDC wallet**, and there
 is no single fixed "parse logs" REST endpoint (Zero brokers to whichever
 third-party capability `search` surfaces). Rather than fight the frozen
@@ -86,7 +86,7 @@ contract at the deadline, `zero-live.ts`:
 
   | env var | default | meaning |
   |---|---|---|
-  | `ZERO_API_KEY` | — (required) | credential; unset ⇒ throw ⇒ local fallback |
+  | `ZERO_API_KEY` | - (required) | credential; unset ⇒ throw ⇒ local fallback |
   | `ZERO_API_URL` | `https://api.zero.xyz` | Zero invoke gateway base |
   | `ZERO_INVOKE_PATH` | `/v1/fetch` | `fetch`-style capability-invoke path |
   | `ZERO_CAPABILITY` | `log-parse` | capability/attribution id (e.g. `z_Ab12cd.1`) |
@@ -104,7 +104,7 @@ identical either way.
 
 `parseLogsLive` uses Zero's returned fields when present, and derives anything
 Zero omits from `raw` locally (the same regex technique as the fallback parser).
-**No fixture values are hardcoded** — every field traces to Zero's response or
+**No fixture values are hardcoded** - every field traces to Zero's response or
 to `raw`.
 
 | `ParsedLogs` field | from Zero if it returns… | otherwise derived from `raw` |
@@ -113,14 +113,14 @@ to `raw`.
 | `suspectComponent` | `body.suspectComponent \| component` | most-frequent `E`-line component |
 | `suspectDeploy` | `body.suspectDeploy \| deploy` | `deploy=…` in an `E` line |
 | `sampleLines` | `body.sampleLines[]` | first 3 `E` lines |
-| `parserSource` | always `"zero"` — only reached on a genuine success | (fallback path sets `"fallback"`) |
-| `costUsd` | `payment.amountUsd \| payment.amount \| costUsd \| x-zero-payment` header | **never invented** — omitted if absent |
+| `parserSource` | always `"zero"` - only reached on a genuine success | (fallback path sets `"fallback"`) |
+| `costUsd` | `payment.amountUsd \| payment.amount \| costUsd \| x-zero-payment` header | **never invented** - omitted if absent |
 
 ---
 
 ## Verification status
 
-### Throw-on-failure path — ✅ VERIFIED (this is what the demo's fallback depends on)
+### Throw-on-failure path - ✅ VERIFIED (this is what the demo's fallback depends on)
 
 With `ZERO_API_KEY` unset, `parseLogsLive` throws immediately, before any
 network call, so `clients.ts` falls back to the local parser:
@@ -131,7 +131,7 @@ THREW CLEANLY: zero-live: ZERO_API_KEY unset
 exit=0
 ```
 
-### Mapping path — ✅ VERIFIED with a stubbed Zero success (no key needed)
+### Mapping path - ✅ VERIFIED with a stubbed Zero success (no key needed)
 
 Stubbing `fetch` to return a Zero-shaped envelope with an **empty capability
 body but a real payment receipt** proves the mapping is genuine (fields derived
@@ -149,7 +149,7 @@ from `raw`, cost taken from the receipt) and not hardcoded:
 }
 ```
 
-### Live path — ⏳ PENDING a real key
+### Live path - ⏳ PENDING a real key
 
 `npx tsc --noEmit` (repo root) passes, so `zero-live.ts` type-checks against the
 frozen `ParsedLogs` contract. Only a funded credential is missing.
@@ -183,4 +183,4 @@ and the real `costUsd`. Replace the STATUS line at the top with
 
 Leave the credential unset. `parseLogsLive` throws, `clients.ts` falls back to
 the local regex parser, and the UI labels the result `parserSource:"fallback"`.
-The demo narrative survives intact — honesty beats theater.
+The demo narrative survives intact - honesty beats theater.

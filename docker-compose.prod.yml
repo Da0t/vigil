@@ -1,9 +1,9 @@
-# Vigil — PRODUCTION overrides. Layer on top of docker-compose.yml:
+# Vigil - PRODUCTION overrides. Layer on top of docker-compose.yml:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 #
 # Turns on the hardened path: VIGIL_ENV=production (fail closed), a shared Redis
 # grant store, service-to-service auth + sandbox attestation, and network
-# isolation (payments-api is NOT published to the host — only Pomerium reaches
+# isolation (payments-api is NOT published to the host - only Pomerium reaches
 # its destructive routes). Secrets come from the HOST environment and are never
 # committed:
 #   export VIGIL_INTERNAL_SECRET=... WORKER_ATTEST_SECRET=...   (>=16 chars each)

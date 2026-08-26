@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { RedisGrantStore } from "./grants";
 
 const url = process.env.REDIS_URL;
-const skip = url ? false : "REDIS_URL not set — start redis and export REDIS_URL to run";
+const skip = url ? false : "REDIS_URL not set - start redis and export REDIS_URL to run";
 
 test("two gate replicas sharing one Redis spend a token exactly once", { skip }, async () => {
   const a = new RedisGrantStore(url!);
